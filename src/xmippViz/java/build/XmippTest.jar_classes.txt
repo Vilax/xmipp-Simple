@@ -1,0 +1,5 @@
+-C /home/vilas/isoXmipp/xmipp-bundle/src/xmippViz/java/build xmipp/test/FilenameTest.class
+-C /home/vilas/isoXmipp/xmipp-bundle/src/xmippViz/java/build xmipp/test/MetadataTest$Worker.class
+-C /home/vilas/isoXmipp/xmipp-bundle/src/xmippViz/java/build xmipp/test/XmippTest.class
+-C /home/vilas/isoXmipp/xmipp-bundle/src/xmippViz/java/build xmipp/test/MetadataTest.class
+-C /home/vilas/isoXmipp/xmipp-bundle/src/xmippViz/java/build xmipp/test/ImageGenericTest.class

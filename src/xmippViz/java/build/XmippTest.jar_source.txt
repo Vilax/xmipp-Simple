@@ -1,0 +1,4 @@
+java/src/xmipp/test/MetadataTest.java
+java/src/xmipp/test/XmippTest.java
+java/src/xmipp/test/FilenameTest.java
+java/src/xmipp/test/ImageGenericTest.java
