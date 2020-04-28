@@ -716,7 +716,7 @@ def compileModule(Nproc,module):
 
 def compile(Nproc):
     ensureConfig()
-    ensureConfigVersion(configDict)
+    #ensureConfigVersion(configDict)
     if not compileDependencies(Nproc):
         return False
     return compileXmipp(Nproc)
