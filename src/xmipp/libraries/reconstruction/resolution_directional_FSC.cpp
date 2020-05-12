@@ -83,10 +83,8 @@ public:
         addParamsLine("   [--sampling <Ts=1>]                : (Optical) Pixel size (Angstrom). If it is not provided by default will be 1 A/px.");
         addParamsLine("   [--mask <input_file=\"\">]         : (Optional) Smooth mask to remove noise.");
         addParamsLine("   [--particles <input_file=\"\">]    : (Optional) Set of Particles used for reconstructing");
-        addParamsLine("   [--anglecone <s=20>]               : (Optional) Angle Cone (angle axis-generatrix) for estimating the directional FSC");
+        addParamsLine("   [--anglecone <ang_con=-1>]               : (Optional) Angle Cone (angle axis-generatrix) for estimating the directional FSC");
         addParamsLine("   [--threedfsc <output_file=\"\">]   : (Optional) The 3D FSC map is obtained.");
-        addParamsLine("   [--doCrossValidation]		         : (Optional) The ");
-
 
         addParamsLine("   [--test]                           : (Optional) It executes an unitary test");
         addParamsLine("   [--doSSNR]				         : (Optional) Computes a directional SSNR");
@@ -113,7 +111,6 @@ public:
         fn_fscmd_folder = getParam("--fscfolder");
         fn_ani = getParam("--anisotropy");
         doSSNR = checkParam("--doSSNR");
-        doCrossValidation = checkParam("--doCrossValidation");
         test = checkParam("--test");
     }
 
@@ -427,7 +424,10 @@ public:
 					ux = sqrt(ux + uy + uz);
 
 					if (ux>0.5)
+					{
+						++n;
 						continue;
+					}
 					else
 						DIRECT_MULTIDIM_ELEM(sphere,n) = -ux;
 					++n;
@@ -583,7 +583,6 @@ public:
 			 MultidimArray<std::complex<double>> &f1, MultidimArray<std::complex<double>> &f2)
     {
     	int idxcutoff = (int) round(cutoff * m1sizeX);
-    	std::cout << idxcutoff << std::endl;
         int ZdimFT1=(int)ZSIZE(FT1);
         int YdimFT1=(int)YSIZE(FT1);
         int XdimFT1=(int)XSIZE(FT1);
@@ -665,328 +664,6 @@ public:
     	if (alot == true)
     	{
     		angles.initZeros(2,321);
-//    		MAT_ELEM(angles, 0,0) = 0;      MAT_ELEM(angles, 1, 0) = 0;
-//    		MAT_ELEM(angles, 0,1) = -36;    MAT_ELEM(angles, 1, 1) = 63.4349;
-//    		MAT_ELEM(angles, 0,2) = 36;     MAT_ELEM(angles, 1, 2) = 63.4349;
-//    		MAT_ELEM(angles, 0,3) = 0;      MAT_ELEM(angles, 1, 3) = 116.565;
-//    		MAT_ELEM(angles, 0,4) = 72;     MAT_ELEM(angles, 1, 4) = 116.565;
-//    		MAT_ELEM(angles, 0,5) = -72;    MAT_ELEM(angles, 1, 5) = 116.565;
-//    		MAT_ELEM(angles, 0,6) = -36;    MAT_ELEM(angles, 1, 6) = 31.7175;
-//    		MAT_ELEM(angles, 0,7) = 36;     MAT_ELEM(angles, 1, 7) = 31.7175;
-//    		MAT_ELEM(angles, 0,8) = 0;      MAT_ELEM(angles, 1, 8) = 58.2825;
-//    		MAT_ELEM(angles, 0,9) = -72;    MAT_ELEM(angles, 1, 9) = 58.2825;
-//    		MAT_ELEM(angles, 0,10) = -18;   MAT_ELEM(angles, 1, 10) = 90;
-//    		MAT_ELEM(angles, 0,11) = -54;   MAT_ELEM(angles, 1, 11) = 90;
-//    		MAT_ELEM(angles, 0,12) = 72;    MAT_ELEM(angles, 1, 12) = 58.2825;
-//    		MAT_ELEM(angles, 0,13) = 18;    MAT_ELEM(angles, 1, 13) = 90;
-//    		MAT_ELEM(angles, 0,14) = 54;    MAT_ELEM(angles, 1, 14) = 90;
-//    		MAT_ELEM(angles, 0,15) = 90;    MAT_ELEM(angles, 1, 15) = 90;
-//    		MAT_ELEM(angles, 0,16) = 36;    MAT_ELEM(angles, 1, 16) = 121.718;
-//    		MAT_ELEM(angles, 0,17) = -36;   MAT_ELEM(angles, 1, 17) = 121.718;
-//    		MAT_ELEM(angles, 0,18) = 0;     MAT_ELEM(angles, 1, 18) = 148.282;
-//    		MAT_ELEM(angles, 0,19) = 72;    MAT_ELEM(angles, 1, 19) = 148.282;
-//    		MAT_ELEM(angles, 0,20) = -72;   MAT_ELEM(angles, 1, 20) = 148.282;
-//    		MAT_ELEM(angles, 0,21) = -13.6138;   MAT_ELEM(angles, 1, 21) = 43.6469;
-//    		MAT_ELEM(angles, 0,22) = 58.3862;    MAT_ELEM(angles, 1, 22) = 43.6469;
-//    		MAT_ELEM(angles, 0,23) = -85.6138;   MAT_ELEM(angles, 1, 23) = 43.6469;
-//    		MAT_ELEM(angles, 0,24) = 0;          MAT_ELEM(angles, 1, 24) = 90;
-//    		MAT_ELEM(angles, 0,25) = 72;         MAT_ELEM(angles, 1, 25) = 90;
-//    		MAT_ELEM(angles, 0,26) = -72;        MAT_ELEM(angles, 1, 26) = 90;
-//    		MAT_ELEM(angles, 0,27) = 45.7323;    MAT_ELEM(angles, 1, 27) = 106.045;
-//    		MAT_ELEM(angles, 0,28) = -26.2677;   MAT_ELEM(angles, 1, 28) = 106.045;
-//    		MAT_ELEM(angles, 0,29) = 36;         MAT_ELEM(angles, 1, 29) = 153.435;
-//    		MAT_ELEM(angles, 0,30) = -36;        MAT_ELEM(angles, 1, 30) = 153.435;
-//    		MAT_ELEM(angles, 0,31) = 0;          MAT_ELEM(angles, 1, 31) = 26.5651;
-//    		MAT_ELEM(angles, 0,32) = 72;         MAT_ELEM(angles, 1, 32) = 26.5651;
-//    		MAT_ELEM(angles, 0,33) = -72;        MAT_ELEM(angles, 1, 33) = 26.5651;
-//    		MAT_ELEM(angles, 0,34) = -9.7323;    MAT_ELEM(angles, 1, 34) = 73.9549;
-//    		MAT_ELEM(angles, 0,35) = 62.2677;    MAT_ELEM(angles, 1, 35) = 73.9549;
-//    		MAT_ELEM(angles, 0,36) = -81.7323;   MAT_ELEM(angles, 1, 36) = 73.9549;
-//    		MAT_ELEM(angles, 0,37) = 26.2677;    MAT_ELEM(angles, 1, 37) = 106.045;
-//    		MAT_ELEM(angles, 0,38) = -45.7323;   MAT_ELEM(angles, 1, 38) = 106.045;
-//    		MAT_ELEM(angles, 0,39) = 22.3862;    MAT_ELEM(angles, 1, 39) = 136.353;
-//    		MAT_ELEM(angles, 0,40) = -49.6138;   MAT_ELEM(angles, 1, 40) = 136.353;
-//    		MAT_ELEM(angles, 0,41) = 13.6138;    MAT_ELEM(angles, 1, 41) = 43.6469;
-//    		MAT_ELEM(angles, 0,42) = 85.6138;    MAT_ELEM(angles, 1, 42) = 43.6469;
-//    		MAT_ELEM(angles, 0,43) = -58.3862;   MAT_ELEM(angles, 1, 43) = 43.6469;
-//    		MAT_ELEM(angles, 0,44) = 9.7323;     MAT_ELEM(angles, 1, 44) = 73.9549;
-//    		MAT_ELEM(angles, 0,45) = 81.7323;    MAT_ELEM(angles, 1, 45) = 73.9549;
-//    		MAT_ELEM(angles, 0,46) = -62.2677;   MAT_ELEM(angles, 1, 46) = 73.9549;
-//    		MAT_ELEM(angles, 0,47) = 36;         MAT_ELEM(angles, 1, 47) = 90;
-//    		MAT_ELEM(angles, 0,48) = -36;        MAT_ELEM(angles, 1, 48) = 90;
-//    		MAT_ELEM(angles, 0,49) = 49.6138;    MAT_ELEM(angles, 1, 49) = 136.353;
-//    		MAT_ELEM(angles, 0,50) = -22.3862;   MAT_ELEM(angles, 1, 50) = 136.353;
-//    		MAT_ELEM(angles, 0,51) = -36;        MAT_ELEM(angles, 1, 51) = 15.8587;
-//    		MAT_ELEM(angles, 0,52) = 36;         MAT_ELEM(angles, 1, 52) = 15.8587;
-//    		MAT_ELEM(angles, 0,53) = -18.467;    MAT_ELEM(angles, 1, 53) = 59.6208;
-//    		MAT_ELEM(angles, 0,54) = -53.533;    MAT_ELEM(angles, 1, 54) = 59.6208;
-//    		MAT_ELEM(angles, 0,55) = -26.4943;   MAT_ELEM(angles, 1, 55) = 76.5584;
-//    		MAT_ELEM(angles, 0,56) = -45.5057;   MAT_ELEM(angles, 1, 56) = 76.5584;
-//    		MAT_ELEM(angles, 0,57) = 53.533;     MAT_ELEM(angles, 1, 57) = 59.6208;
-//    		MAT_ELEM(angles, 0,58) = 26.4943;    MAT_ELEM(angles, 1, 58) = 76.5584;
-//    		MAT_ELEM(angles, 0,59) = 45.5057;    MAT_ELEM(angles, 1, 59) = 76.5584;
-//    		MAT_ELEM(angles, 0,60) = 17.533;     MAT_ELEM(angles, 1, 60) = 120.379;
-//    		MAT_ELEM(angles, 0,61) = -17.533;    MAT_ELEM(angles, 1, 61) = 120.379;
-//    		MAT_ELEM(angles, 0,62) = 0;          MAT_ELEM(angles, 1, 62) = 132.424;
-//    		MAT_ELEM(angles, 0,63) = 89.533;     MAT_ELEM(angles, 1, 63) = 120.379;
-//    		MAT_ELEM(angles, 0,64) = 72;         MAT_ELEM(angles, 1, 64) = 132.424;
-//    		MAT_ELEM(angles, 0,65) = -72;        MAT_ELEM(angles, 1, 65) = 132.424;
-//    		MAT_ELEM(angles, 0,66) = -36;        MAT_ELEM(angles, 1, 66) = 47.5762;
-//    		MAT_ELEM(angles, 0,67) = 36;         MAT_ELEM(angles, 1, 67) = 47.5762;
-//    		MAT_ELEM(angles, 0,68) = 18.467;     MAT_ELEM(angles, 1, 68) = 59.6208;
-//    		MAT_ELEM(angles, 0,69) = -9.5057;    MAT_ELEM(angles, 1, 69) = 103.442;
-//    		MAT_ELEM(angles, 0,70) = -62.4943;   MAT_ELEM(angles, 1, 70) = 103.442;
-//    		MAT_ELEM(angles, 0,71) = 9.5057;     MAT_ELEM(angles, 1, 71) = 103.442;
-//    		MAT_ELEM(angles, 0,72) = 62.4943;    MAT_ELEM(angles, 1, 72) = 103.442;
-//    		MAT_ELEM(angles, 0,73) = 81.5057;    MAT_ELEM(angles, 1, 73) = 103.442;
-//    		MAT_ELEM(angles, 0,74) = -81.5057;   MAT_ELEM(angles, 1, 74) = 103.442;
-//    		MAT_ELEM(angles, 0,75) = 54.467;     MAT_ELEM(angles, 1, 75) = 120.379;
-//    		MAT_ELEM(angles, 0,76) = -54.467;    MAT_ELEM(angles, 1, 76) = 120.379;
-//    		MAT_ELEM(angles, 0,77) = 0;          MAT_ELEM(angles, 1, 77) = 164.141;
-//    		MAT_ELEM(angles, 0,78) = 72;         MAT_ELEM(angles, 1, 78) = 164.141;
-//    		MAT_ELEM(angles, 0,79) = -89.533;    MAT_ELEM(angles, 1, 79) = 120.379;
-//    		MAT_ELEM(angles, 0,80) = -72;        MAT_ELEM(angles, 1, 80) = 164.141;
-//    		MAT_ELEM(angles, 0,81) = 0;          MAT_ELEM(angles, 1, 81) = 42.8321;
-//    		MAT_ELEM(angles, 0,82) = 72;         MAT_ELEM(angles, 1, 82) = 42.8321;
-//    		MAT_ELEM(angles, 0,83) = -72;        MAT_ELEM(angles, 1, 83) = 42.8321;
-//    		MAT_ELEM(angles, 0,84) = 4.7693;     MAT_ELEM(angles, 1, 84) = 81.9488;
-//    		MAT_ELEM(angles, 0,85) = 76.7693;    MAT_ELEM(angles, 1, 85) = 81.9488;
-//    		MAT_ELEM(angles, 0,86) = -67.2307;   MAT_ELEM(angles, 1, 86) = 81.9488;
-//    		MAT_ELEM(angles, 0,87) = 40.7693;    MAT_ELEM(angles, 1, 87) = 98.0512;
-//    		MAT_ELEM(angles, 0,88) = -31.2307;   MAT_ELEM(angles, 1, 88) = 98.0512;
-//    		MAT_ELEM(angles, 0,89) = 44.2677;    MAT_ELEM(angles, 1, 89) = 145.076;
-//    		MAT_ELEM(angles, 0,90) = -27.7323;   MAT_ELEM(angles, 1, 90) = 145.076;
-//    		MAT_ELEM(angles, 0,91) = 13.5146;    MAT_ELEM(angles, 1, 91) = 20.3172;
-//    		MAT_ELEM(angles, 0,92) = 85.5146;    MAT_ELEM(angles, 1, 92) = 20.3172;
-//    		MAT_ELEM(angles, 0,93) = -58.4854;   MAT_ELEM(angles, 1, 93) = 20.3172;
-//    		MAT_ELEM(angles, 0,94) = -13.8637;   MAT_ELEM(angles, 1, 94) = 66.7276;
-//    		MAT_ELEM(angles, 0,95) = 58.1363;    MAT_ELEM(angles, 1, 95) = 66.7276;
-//    		MAT_ELEM(angles, 0,96) = -85.8637;   MAT_ELEM(angles, 1, 96) = 66.7276;
-//    		MAT_ELEM(angles, 0,97) = 17.8362;    MAT_ELEM(angles, 1, 97) = 104.895;
-//    		MAT_ELEM(angles, 0,98) = 89.8362;    MAT_ELEM(angles, 1, 98) = 104.895;
-//    		MAT_ELEM(angles, 0,99) = -54.1638;   MAT_ELEM(angles, 1, 99) = 104.895;
-//    		MAT_ELEM(angles, 0,100) = 19.6899;   MAT_ELEM(angles, 1, 100) = 128.391;
-//    		MAT_ELEM(angles, 0,101) = -52.3101;  MAT_ELEM(angles, 1, 101) = 128.391;
-//    		MAT_ELEM(angles, 0,102) = -25.1876;  MAT_ELEM(angles, 1, 102) = 45.0621;
-//    		MAT_ELEM(angles, 0,103) = 46.8124;   MAT_ELEM(angles, 1, 103) = 45.0621;
-//    		MAT_ELEM(angles, 0,104) = -4.6867;   MAT_ELEM(angles, 1, 104) = 96.7438;
-//    		MAT_ELEM(angles, 0,105) = 67.3133;   MAT_ELEM(angles, 1, 105) = 96.7438;
-//    		MAT_ELEM(angles, 0,106) = -76.6867;  MAT_ELEM(angles, 1, 106) = 96.7438;
-//    		MAT_ELEM(angles, 0,107) = 49.8637;   MAT_ELEM(angles, 1, 107) = 113.272;
-//    		MAT_ELEM(angles, 0,108) = -22.1363;  MAT_ELEM(angles, 1, 108) = 113.272;
-//    		MAT_ELEM(angles, 0,109) = 22.4854;   MAT_ELEM(angles, 1, 109) = 159.683;
-//    		MAT_ELEM(angles, 0,110) = -49.5146;  MAT_ELEM(angles, 1, 110) = 159.683;
-//    		MAT_ELEM(angles, 0,111) = 16.3101;   MAT_ELEM(angles, 1, 111) = 51.6091;
-//    		MAT_ELEM(angles, 0,112) = 88.3101;   MAT_ELEM(angles, 1, 112) = 51.6091;
-//    		MAT_ELEM(angles, 0,113) = -55.6899;  MAT_ELEM(angles, 1, 113) = 51.6091;
-//    		MAT_ELEM(angles, 0,114) = 18.1638;   MAT_ELEM(angles, 1, 114) = 75.1046;
-//    		MAT_ELEM(angles, 0,115) = -53.8362;  MAT_ELEM(angles, 1, 115) = 75.1046;
-//    		MAT_ELEM(angles, 0,116) = 40.6867;   MAT_ELEM(angles, 1, 116) = 83.2562;
-//    		MAT_ELEM(angles, 0,117) = -31.3133;  MAT_ELEM(angles, 1, 117) = 83.2562;
-//    		MAT_ELEM(angles, 0,118) = 61.1876;   MAT_ELEM(angles, 1, 118) = 134.938;
-//    		MAT_ELEM(angles, 0,119) = -82.8124;  MAT_ELEM(angles, 1, 119) = 134.938;
-//    		MAT_ELEM(angles, 0,120) = -10.8124;  MAT_ELEM(angles, 1, 120) = 134.938;
-//    		MAT_ELEM(angles, 0,121) = -8.2677;   MAT_ELEM(angles, 1, 121) = 34.9243;
-//    		MAT_ELEM(angles, 0,122) = 63.7323;   MAT_ELEM(angles, 1, 122) = 34.9243;
-//    		MAT_ELEM(angles, 0,123) = -80.2677;  MAT_ELEM(angles, 1, 123) = 34.9243;
-//    		MAT_ELEM(angles, 0,124) = -4.7693;   MAT_ELEM(angles, 1, 124) = 81.9488;
-//    		MAT_ELEM(angles, 0,125) = 67.2307;   MAT_ELEM(angles, 1, 125) = 81.9488;
-//    		MAT_ELEM(angles, 0,126) = -76.7693;  MAT_ELEM(angles, 1, 126) = 81.9488;
-//    		MAT_ELEM(angles, 0,127) = 36;        MAT_ELEM(angles, 1, 127) = 106.267;
-//    		MAT_ELEM(angles, 0,128) = -36;       MAT_ELEM(angles, 1, 128) = 106.267;
-//    		MAT_ELEM(angles, 0,129) = 27.7323;   MAT_ELEM(angles, 1, 129) = 145.076;
-//    		MAT_ELEM(angles, 0,130) = -44.2677;  MAT_ELEM(angles, 1, 130) = 145.076;
-//    		MAT_ELEM(angles, 0,131) = -13.5146;  MAT_ELEM(angles, 1, 131) = 20.3172;
-//    		MAT_ELEM(angles, 0,132) = 58.4854;   MAT_ELEM(angles, 1, 132) = 20.3172;
-//    		MAT_ELEM(angles, 0,133) = -85.5146;  MAT_ELEM(angles, 1, 133) = 20.3172;
-//    		MAT_ELEM(angles, 0,134) = -18.1638;  MAT_ELEM(angles, 1, 134) = 75.1046;
-//    		MAT_ELEM(angles, 0,135) = 53.8362;   MAT_ELEM(angles, 1, 135) = 75.1046;
-//    		MAT_ELEM(angles, 0,136) = 22.1363;   MAT_ELEM(angles, 1, 136) = 113.272;
-//    		MAT_ELEM(angles, 0,137) = -49.8637;  MAT_ELEM(angles, 1, 137) = 113.272;
-//    		MAT_ELEM(angles, 0,138) = 10.8124;   MAT_ELEM(angles, 1, 138) = 134.938;
-//    		MAT_ELEM(angles, 0,139) = 82.8124;   MAT_ELEM(angles, 1, 139) = 134.938;
-//    		MAT_ELEM(angles, 0,140) = -61.1876;  MAT_ELEM(angles, 1, 140) = 134.938;
-//    		MAT_ELEM(angles, 0,141) = -16.3101;  MAT_ELEM(angles, 1, 141) = 51.6091;
-//    		MAT_ELEM(angles, 0,142) = 55.6899;   MAT_ELEM(angles, 1, 142) = 51.6091;
-//    		MAT_ELEM(angles, 0,143) = -88.3101;  MAT_ELEM(angles, 1, 143) = 51.6091;
-//    		MAT_ELEM(angles, 0,144) = 4.6867;    MAT_ELEM(angles, 1, 144) = 96.7438;
-//    		MAT_ELEM(angles, 0,145) = 76.6867;   MAT_ELEM(angles, 1, 145) = 96.7438;
-//    		MAT_ELEM(angles, 0,146) = -67.3133;  MAT_ELEM(angles, 1, 146) = 96.7438;
-//    		MAT_ELEM(angles, 0,147) = 54.1638;   MAT_ELEM(angles, 1, 147) = 104.895;
-//    		MAT_ELEM(angles, 0,148) = -89.8362;  MAT_ELEM(angles, 1, 148) = 104.895;
-//    		MAT_ELEM(angles, 0,149) = -17.8362;  MAT_ELEM(angles, 1, 149) = 104.895;
-//    		MAT_ELEM(angles, 0,150) = 49.5146;   MAT_ELEM(angles, 1, 150) = 159.683;
-//    		MAT_ELEM(angles, 0,151) = -22.4854;  MAT_ELEM(angles, 1, 151) = 159.683;
-//    		MAT_ELEM(angles, 0,152) = 25.1876;   MAT_ELEM(angles, 1, 152) = 45.0621;
-//    		MAT_ELEM(angles, 0,153) = -46.8124;  MAT_ELEM(angles, 1, 153) = 45.0621;
-//    		MAT_ELEM(angles, 0,154) = 13.8637;   MAT_ELEM(angles, 1, 154) = 66.7276;
-//    		MAT_ELEM(angles, 0,155) = 85.8637;   MAT_ELEM(angles, 1, 155) = 66.7276;
-//    		MAT_ELEM(angles, 0,156) = -58.1363;  MAT_ELEM(angles, 1, 156) = 66.7276;
-//    		MAT_ELEM(angles, 0,157) = 31.3133;   MAT_ELEM(angles, 1, 157) = 83.2562;
-//    		MAT_ELEM(angles, 0,158) = -40.6867;  MAT_ELEM(angles, 1, 158) = 83.2562;
-//    		MAT_ELEM(angles, 0,159) = 52.3101;   MAT_ELEM(angles, 1, 159) = 128.391;
-//    		MAT_ELEM(angles, 0,160) = -19.6899;  MAT_ELEM(angles, 1, 160) = 128.391;
-//    		MAT_ELEM(angles, 0,161) = 8.2677;    MAT_ELEM(angles, 1, 161) = 34.9243;
-//    		MAT_ELEM(angles, 0,162) = 80.2677;   MAT_ELEM(angles, 1, 162) = 34.9243;
-//    		MAT_ELEM(angles, 0,163) = -63.7323;  MAT_ELEM(angles, 1, 163) = 34.9243;
-//    		MAT_ELEM(angles, 0,164) = 0;         MAT_ELEM(angles, 1, 164) = 73.733;
-//    		MAT_ELEM(angles, 0,165) = 72;        MAT_ELEM(angles, 1, 165) = 73.733;
-//    		MAT_ELEM(angles, 0,166) = -72;       MAT_ELEM(angles, 1, 166) = 73.733;
-//    		MAT_ELEM(angles, 0,167) = 31.2307;   MAT_ELEM(angles, 1, 167) = 98.0512;
-//    		MAT_ELEM(angles, 0,168) = -40.7693;  MAT_ELEM(angles, 1, 168) = 98.0512;
-//    		MAT_ELEM(angles, 0,169) = 36;        MAT_ELEM(angles, 1, 169) = 137.168;
-//    		MAT_ELEM(angles, 0,170) = -36;       MAT_ELEM(angles, 1, 170) = 137.168;
-//    		MAT_ELEM(angles, 0,171) = 0;         MAT_ELEM(angles, 1, 171) = 12.9432;
-//    		MAT_ELEM(angles, 0,172) = 72;        MAT_ELEM(angles, 1, 172) = 12.9432;
-//    		MAT_ELEM(angles, 0,173) = -72;       MAT_ELEM(angles, 1, 173) = 12.9432;
-//    		MAT_ELEM(angles, 0,174) = -22.7214;  MAT_ELEM(angles, 1, 174) = 68.041;
-//    		MAT_ELEM(angles, 0,175) = 49.2786;   MAT_ELEM(angles, 1, 175) = 68.041;
-//    		MAT_ELEM(angles, 0,176) = 13.2786;   MAT_ELEM(angles, 1, 176) = 111.959;
-//    		MAT_ELEM(angles, 0,177) = 85.2786;   MAT_ELEM(angles, 1, 177) = 111.959;
-//    		MAT_ELEM(angles, 0,178) = -58.7214;  MAT_ELEM(angles, 1, 178) = 111.959;
-//    		MAT_ELEM(angles, 0,179) = 9.4537;    MAT_ELEM(angles, 1, 179) = 126.722;
-//    		MAT_ELEM(angles, 0,180) = 81.4537;   MAT_ELEM(angles, 1, 180) = 126.722;
-//    		MAT_ELEM(angles, 0,181) = -62.5463;  MAT_ELEM(angles, 1, 181) = 126.722;
-//    		MAT_ELEM(angles, 0,182) = -26.5463;  MAT_ELEM(angles, 1, 182) = 53.2783;
-//    		MAT_ELEM(angles, 0,183) = 45.4537;   MAT_ELEM(angles, 1, 183) = 53.2783;
-//    		MAT_ELEM(angles, 0,184) = 0;         MAT_ELEM(angles, 1, 184) = 103.622;
-//    		MAT_ELEM(angles, 0,185) = 72;        MAT_ELEM(angles, 1, 185) = 103.622;
-//    		MAT_ELEM(angles, 0,186) = -72;       MAT_ELEM(angles, 1, 186) = 103.622;
-//    		MAT_ELEM(angles, 0,187) = 58.7214;   MAT_ELEM(angles, 1, 187) = 111.959;
-//    		MAT_ELEM(angles, 0,188) = -85.2786;  MAT_ELEM(angles, 1, 188) = 111.959;
-//    		MAT_ELEM(angles, 0,189) = -13.2786;  MAT_ELEM(angles, 1, 189) = 111.959;
-//    		MAT_ELEM(angles, 0,190) = 36;        MAT_ELEM(angles, 1, 190) = 167.057;
-//    		MAT_ELEM(angles, 0,191) = -36;       MAT_ELEM(angles, 1, 191) = 167.057;
-//    		MAT_ELEM(angles, 0,192) = 26.5463;   MAT_ELEM(angles, 1, 192) = 53.2783;
-//    		MAT_ELEM(angles, 0,193) = -45.4537;  MAT_ELEM(angles, 1, 193) = 53.2783;
-//    		MAT_ELEM(angles, 0,194) = 22.7214;   MAT_ELEM(angles, 1, 194) = 68.041;
-//    		MAT_ELEM(angles, 0,195) = -49.2786;  MAT_ELEM(angles, 1, 195) = 68.041;
-//    		MAT_ELEM(angles, 0,196) = 36;        MAT_ELEM(angles, 1, 196) = 76.3782;
-//    		MAT_ELEM(angles, 0,197) = -36;       MAT_ELEM(angles, 1, 197) = 76.3782;
-//    		MAT_ELEM(angles, 0,198) = 62.5463;   MAT_ELEM(angles, 1, 198) = 126.722;
-//    		MAT_ELEM(angles, 0,199) = -81.4537;  MAT_ELEM(angles, 1, 199) = 126.722;
-//    		MAT_ELEM(angles, 0,200) = -9.4537;   MAT_ELEM(angles, 1, 200) = 126.722;
-//    		MAT_ELEM(angles, 0,201) = -23.2736;  MAT_ELEM(angles, 1, 201) = 37.1611;
-//    		MAT_ELEM(angles, 0,202) = 48.7264;   MAT_ELEM(angles, 1, 202) = 37.1611;
-//    		MAT_ELEM(angles, 0,203) = -9;        MAT_ELEM(angles, 1, 203) = 90;
-//    		MAT_ELEM(angles, 0,204) = 63;        MAT_ELEM(angles, 1, 204) = 90;
-//    		MAT_ELEM(angles, 0,205) = -81;       MAT_ELEM(angles, 1, 205) = 90;
-//    		MAT_ELEM(angles, 0,206) = 41.1634;   MAT_ELEM(angles, 1, 206) = 113.958;
-//    		MAT_ELEM(angles, 0,207) = -30.8366;  MAT_ELEM(angles, 1, 207) = 113.958;
-//    		MAT_ELEM(angles, 0,208) = 16.498;    MAT_ELEM(angles, 1, 208) = 152.057;
-//    		MAT_ELEM(angles, 0,209) = 88.498;    MAT_ELEM(angles, 1, 209) = 152.057;
-//    		MAT_ELEM(angles, 0,210) = -55.502;   MAT_ELEM(angles, 1, 210) = 152.057;
-//    		MAT_ELEM(angles, 0,211) = -19.502;   MAT_ELEM(angles, 1, 211) = 27.9429;
-//    		MAT_ELEM(angles, 0,212) = 52.498;    MAT_ELEM(angles, 1, 212) = 27.9429;
-//    		MAT_ELEM(angles, 0,213) = -13.9484;  MAT_ELEM(angles, 1, 213) = 81.9568;
-//    		MAT_ELEM(angles, 0,214) = 58.0516;   MAT_ELEM(angles, 1, 214) = 81.9568;
-//    		MAT_ELEM(angles, 0,215) = -85.9484;  MAT_ELEM(angles, 1, 215) = 81.9568;
-//    		MAT_ELEM(angles, 0,216) = 30.8366;   MAT_ELEM(angles, 1, 216) = 113.958;
-//    		MAT_ELEM(angles, 0,217) = -41.1634;  MAT_ELEM(angles, 1, 217) = 113.958;
-//    		MAT_ELEM(angles, 0,218) = 12.7264;   MAT_ELEM(angles, 1, 218) = 142.839;
-//    		MAT_ELEM(angles, 0,219) = 84.7264;   MAT_ELEM(angles, 1, 219) = 142.839;
-//    		MAT_ELEM(angles, 0,220) = -59.2736;  MAT_ELEM(angles, 1, 220) = 142.839;
-//    		MAT_ELEM(angles, 0,221) = 6.0948;    MAT_ELEM(angles, 1, 221) = 50.7685;
-//    		MAT_ELEM(angles, 0,222) = 78.0948;   MAT_ELEM(angles, 1, 222) = 50.7685;
-//    		MAT_ELEM(angles, 0,223) = -65.9052;  MAT_ELEM(angles, 1, 223) = 50.7685;
-//    		MAT_ELEM(angles, 0,224) = 13.9484;   MAT_ELEM(angles, 1, 224) = 81.9568;
-//    		MAT_ELEM(angles, 0,225) = 85.9484;   MAT_ELEM(angles, 1, 225) = 81.9568;
-//    		MAT_ELEM(angles, 0,226) = -58.0516;  MAT_ELEM(angles, 1, 226) = 81.9568;
-//    		MAT_ELEM(angles, 0,227) = 45;        MAT_ELEM(angles, 1, 227) = 90;
-//    		MAT_ELEM(angles, 0,228) = -27;       MAT_ELEM(angles, 1, 228) = 90;
-//    		MAT_ELEM(angles, 0,229) = 59.2736;   MAT_ELEM(angles, 1, 229) = 142.839;
-//    		MAT_ELEM(angles, 0,230) = -84.7264;  MAT_ELEM(angles, 1, 230) = 142.839;
-//    		MAT_ELEM(angles, 0,231) = -12.7264;  MAT_ELEM(angles, 1, 231) = 142.839;
-//    		MAT_ELEM(angles, 0,232) = -36;       MAT_ELEM(angles, 1, 232) = 7.9294;
-//    		MAT_ELEM(angles, 0,233) = 36;        MAT_ELEM(angles, 1, 233) = 7.9294;
-//    		MAT_ELEM(angles, 0,234) = -27.3931;  MAT_ELEM(angles, 1, 234) = 61.2449;
-//    		MAT_ELEM(angles, 0,235) = -44.6069;  MAT_ELEM(angles, 1, 235) = 61.2449;
-//    		MAT_ELEM(angles, 0,236) = -31.0477;  MAT_ELEM(angles, 1, 236) = 69.9333;
-//    		MAT_ELEM(angles, 0,237) = -40.9523;  MAT_ELEM(angles, 1, 237) = 69.9333;
-//    		MAT_ELEM(angles, 0,238) = 44.6069;   MAT_ELEM(angles, 1, 238) = 61.2449;
-//    		MAT_ELEM(angles, 0,239) = 31.0477;   MAT_ELEM(angles, 1, 239) = 69.9333;
-//    		MAT_ELEM(angles, 0,240) = 40.9523;   MAT_ELEM(angles, 1, 240) = 69.9333;
-//    		MAT_ELEM(angles, 0,241) = 8.6069;    MAT_ELEM(angles, 1, 241) = 118.755;
-//    		MAT_ELEM(angles, 0,242) = -8.6069;   MAT_ELEM(angles, 1, 242) = 118.755;
-//    		MAT_ELEM(angles, 0,243) = 0;         MAT_ELEM(angles, 1, 243) = 124.494;
-//    		MAT_ELEM(angles, 0,244) = 80.6069;   MAT_ELEM(angles, 1, 244) = 118.755;
-//    		MAT_ELEM(angles, 0,245) = 72;        MAT_ELEM(angles, 1, 245) = 124.494;
-//    		MAT_ELEM(angles, 0,246) = -72;       MAT_ELEM(angles, 1, 246) = 124.494;
-//    		MAT_ELEM(angles, 0,247) = -36;       MAT_ELEM(angles, 1, 247) = 39.6468;
-//    		MAT_ELEM(angles, 0,248) = 36;        MAT_ELEM(angles, 1, 248) = 39.6468;
-//    		MAT_ELEM(angles, 0,249) = 9.299;     MAT_ELEM(angles, 1, 249) = 58.6205;
-//    		MAT_ELEM(angles, 0,250) = -81.299;   MAT_ELEM(angles, 1, 250) = 58.6205;
-//    		MAT_ELEM(angles, 0,251) = -13.8119;  MAT_ELEM(angles, 1, 251) = 96.7391;
-//    		MAT_ELEM(angles, 0,252) = -58.1881;  MAT_ELEM(angles, 1, 252) = 96.7391;
-//    		MAT_ELEM(angles, 0,253) = 81.299;    MAT_ELEM(angles, 1, 253) = 58.6205;
-//    		MAT_ELEM(angles, 0,254) = 13.8119;   MAT_ELEM(angles, 1, 254) = 96.7391;
-//    		MAT_ELEM(angles, 0,255) = 58.1881;   MAT_ELEM(angles, 1, 255) = 96.7391;
-//    		MAT_ELEM(angles, 0,256) = 85.8119;   MAT_ELEM(angles, 1, 256) = 96.7391;
-//    		MAT_ELEM(angles, 0,257) = -85.8119;  MAT_ELEM(angles, 1, 257) = 96.7391;
-//    		MAT_ELEM(angles, 0,258) = 45.299;    MAT_ELEM(angles, 1, 258) = 121.379;
-//    		MAT_ELEM(angles, 0,259) = -45.299;   MAT_ELEM(angles, 1, 259) = 121.379;
-//    		MAT_ELEM(angles, 0,260) = 0;         MAT_ELEM(angles, 1, 260) = 156.212;
-//    		MAT_ELEM(angles, 0,261) = 72;        MAT_ELEM(angles, 1, 261) = 156.212;
-//    		MAT_ELEM(angles, 0,262) = -72;       MAT_ELEM(angles, 1, 262) = 156.212;
-//    		MAT_ELEM(angles, 0,263) = -6.0948;   MAT_ELEM(angles, 1, 263) = 50.7685;
-//    		MAT_ELEM(angles, 0,264) = 65.9052;   MAT_ELEM(angles, 1, 264) = 50.7685;
-//    		MAT_ELEM(angles, 0,265) = -78.0948;  MAT_ELEM(angles, 1, 265) = 50.7685;
-//    		MAT_ELEM(angles, 0,266) = 9;         MAT_ELEM(angles, 1, 266) = 90;
-//    		MAT_ELEM(angles, 0,267) = 81;        MAT_ELEM(angles, 1, 267) = 90;
-//    		MAT_ELEM(angles, 0,268) = -63;       MAT_ELEM(angles, 1, 268) = 90;
-//    		MAT_ELEM(angles, 0,269) = 49.9484;   MAT_ELEM(angles, 1, 269) = 98.0432;
-//    		MAT_ELEM(angles, 0,270) = -22.0516;  MAT_ELEM(angles, 1, 270) = 98.0432;
-//    		MAT_ELEM(angles, 0,271) = 55.502;    MAT_ELEM(angles, 1, 271) = 152.057;
-//    		MAT_ELEM(angles, 0,272) = -88.498;   MAT_ELEM(angles, 1, 272) = 152.057;
-//    		MAT_ELEM(angles, 0,273) = -16.498;   MAT_ELEM(angles, 1, 273) = 152.057;
-//    		MAT_ELEM(angles, 0,274) = 19.502;    MAT_ELEM(angles, 1, 274) = 27.9429;
-//    		MAT_ELEM(angles, 0,275) = -52.498;   MAT_ELEM(angles, 1, 275) = 27.9429;
-//    		MAT_ELEM(angles, 0,276) = -5.1634;   MAT_ELEM(angles, 1, 276) = 66.0423;
-//    		MAT_ELEM(angles, 0,277) = 66.8366;   MAT_ELEM(angles, 1, 277) = 66.0423;
-//    		MAT_ELEM(angles, 0,278) = -77.1634;  MAT_ELEM(angles, 1, 278) = 66.0423;
-//    		MAT_ELEM(angles, 0,279) = 22.0516;   MAT_ELEM(angles, 1, 279) = 98.0432;
-//    		MAT_ELEM(angles, 0,280) = -49.9484;  MAT_ELEM(angles, 1, 280) = 98.0432;
-//    		MAT_ELEM(angles, 0,281) = 29.9052;   MAT_ELEM(angles, 1, 281) = 129.232;
-//    		MAT_ELEM(angles, 0,282) = -42.0948;  MAT_ELEM(angles, 1, 282) = 129.232;
-//    		MAT_ELEM(angles, 0,283) = 23.2736;   MAT_ELEM(angles, 1, 283) = 37.1611;
-//    		MAT_ELEM(angles, 0,284) = -48.7264;  MAT_ELEM(angles, 1, 284) = 37.1611;
-//    		MAT_ELEM(angles, 0,285) = 5.1634;    MAT_ELEM(angles, 1, 285) = 66.0423;
-//    		MAT_ELEM(angles, 0,286) = 77.1634;   MAT_ELEM(angles, 1, 286) = 66.0423;
-//    		MAT_ELEM(angles, 0,287) = -66.8366;  MAT_ELEM(angles, 1, 287) = 66.0423;
-//    		MAT_ELEM(angles, 0,288) = 27;        MAT_ELEM(angles, 1, 288) = 90;
-//    		MAT_ELEM(angles, 0,289) = -45;       MAT_ELEM(angles, 1, 289) = 90;
-//    		MAT_ELEM(angles, 0,290) = 42.0948;   MAT_ELEM(angles, 1, 290) = 129.232;
-//    		MAT_ELEM(angles, 0,291) = -29.9052;  MAT_ELEM(angles, 1, 291) = 129.232;
-//    		MAT_ELEM(angles, 0,292) = -36;       MAT_ELEM(angles, 1, 292) = 23.7881;
-//    		MAT_ELEM(angles, 0,293) = 36;        MAT_ELEM(angles, 1, 293) = 23.7881;
-//    		MAT_ELEM(angles, 0,294) = -9.299;    MAT_ELEM(angles, 1, 294) = 58.6205;
-//    		MAT_ELEM(angles, 0,295) = -62.701;   MAT_ELEM(angles, 1, 295) = 58.6205;
-//    		MAT_ELEM(angles, 0,296) = -22.1881;  MAT_ELEM(angles, 1, 296) = 83.2609;
-//    		MAT_ELEM(angles, 0,297) = -49.8119;  MAT_ELEM(angles, 1, 297) = 83.2609;
-//    		MAT_ELEM(angles, 0,298) = 62.701;    MAT_ELEM(angles, 1, 298) = 58.6205;
-//    		MAT_ELEM(angles, 0,299) = 22.1881;   MAT_ELEM(angles, 1, 299) = 83.2609;
-//    		MAT_ELEM(angles, 0,300) = 49.8119;   MAT_ELEM(angles, 1, 300) = 83.2609;
-//    		MAT_ELEM(angles, 0,301) = 26.701;    MAT_ELEM(angles, 1, 301) = 121.379;
-//    		MAT_ELEM(angles, 0,302) = -26.701;   MAT_ELEM(angles, 1, 302) = 121.379;
-//    		MAT_ELEM(angles, 0,303) = 0;         MAT_ELEM(angles, 1, 303) = 140.353;
-//    		MAT_ELEM(angles, 0,304) = 72;        MAT_ELEM(angles, 1, 304) = 140.353;
-//    		MAT_ELEM(angles, 0,305) = -72;       MAT_ELEM(angles, 1, 305) = 140.353;
-//    		MAT_ELEM(angles, 0,306) = -36;       MAT_ELEM(angles, 1, 306) = 55.5056;
-//    		MAT_ELEM(angles, 0,307) = 36;        MAT_ELEM(angles, 1, 307) = 55.5056;
-//    		MAT_ELEM(angles, 0,308) = 27.3931;   MAT_ELEM(angles, 1, 308) = 61.2449;
-//    		MAT_ELEM(angles, 0,309) = -4.9523;   MAT_ELEM(angles, 1, 309) = 110.067;
-//    		MAT_ELEM(angles, 0,310) = -67.0477;  MAT_ELEM(angles, 1, 310) = 110.067;
-//    		MAT_ELEM(angles, 0,311) = 4.9523;    MAT_ELEM(angles, 1, 311) = 110.067;
-//    		MAT_ELEM(angles, 0,312) = 67.0477;   MAT_ELEM(angles, 1, 312) = 110.067;
-//    		MAT_ELEM(angles, 0,313) = 76.9523;   MAT_ELEM(angles, 1, 313) = 110.067;
-//    		MAT_ELEM(angles, 0,314) = -76.9523;  MAT_ELEM(angles, 1, 314) = 110.067;
-//    		MAT_ELEM(angles, 0,315) = 63.3931;   MAT_ELEM(angles, 1, 315) = 118.755;
-//    		MAT_ELEM(angles, 0,316) = -63.3931;  MAT_ELEM(angles, 1, 316) = 118.755;
-//    		MAT_ELEM(angles, 0,317) = 0;         MAT_ELEM(angles, 1, 317) = 172.071;
-//    		MAT_ELEM(angles, 0,318) = 72;        MAT_ELEM(angles, 1, 318) = 172.071;
-//    		MAT_ELEM(angles, 0,319) = -80.6069;  MAT_ELEM(angles, 1, 319) = 118.755;
-//    		MAT_ELEM(angles, 0,320) = -72;       MAT_ELEM(angles, 1, 320) = 172.071;
-
     		MAT_ELEM(angles,0,0)=0;MAT_ELEM(angles,1,0)=0;
     		MAT_ELEM(angles,0,1)=324;MAT_ELEM(angles,1,1)=63.4349;
     		MAT_ELEM(angles,0,2)=36;MAT_ELEM(angles,1,2)=63.4349;
@@ -1601,7 +1278,6 @@ public:
     	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(threeDfsc)
         {
 //    		if (std::isnan(DIRECT_MULTIDIM_ELEM(threeDfsc, n)) == 1)
-//    		     std::cout << "mierdaaaa" << std::endl;
     		DIRECT_MULTIDIM_ELEM(FThalf1, n) *= DIRECT_MULTIDIM_ELEM(threeDfsc, n);
     	}
 
@@ -1611,229 +1287,232 @@ public:
     	transformer1.inverseFourierTransform(FThalf1, filteredMap);
     }
 
-    void particleDistributionToResolution(FileName fnParticles, MetaData mdparticles,
-    		MultidimArray<double> &directionAnisotropy, MetaData mdDirRes)
+
+    void resolutionDistribution(MultidimArray<double> &resDirFSC, FileName &fn)
     {
-    	MetaData md1;
-    	md1.read(fnParticles);
-
     	Matrix2D<int> anglesResolution;
-    	size_t Nrot = 180;
-    	size_t Ntilt = 180;
-    	anglesResolution.initZeros(Nrot, Ntilt);
+    	size_t Nrot = 360;
+    	size_t Ntilt = 91;
+    	size_t objIdOut;
 
-    	double tiltangle, rotangle;
-    	size_t objId, objIdOut;
-
-    	FOR_ALL_OBJECTS_IN_METADATA(md1)
+    	MetaData mdOut;
+    	Matrix2D<double> w, wt;
+    	w.initZeros(Nrot, Ntilt);
+    	wt = w;
+    	double cosAngle = cos(ang_con);
+    	std::cout << "ang_con" << ang_con << std::endl;
+    	double aux = 4.0/((cosAngle -1)*(cosAngle -1));
+    	// Directional resolution is store in a metadata
+    	for (double i=0; i<Nrot; i++)
 		{
-			objId = md1.addObject();
-			md1.getValue(MDL_ANGLE_TILT, tiltangle, __iter.objId);
-			md1.getValue(MDL_ANGLE_ROT, rotangle, __iter.objId);
-
-			int newtilt;
-			newtilt = (int) (round(tiltangle) + 90) % 180;
-
-			std::cout << rotangle << " " << tiltangle << "  newtilt " << newtilt << std::endl;
-			for (int k=0; k<Nrot; k++)
+			for (double j=0; j<Ntilt; j++)
 			{
-				MAT_ELEM(anglesResolution, k, newtilt) = MAT_ELEM(anglesResolution, k, newtilt) + 1;
-			}
-		}
+				double rotmatrix =  i*PI/180;
+				double tiltmatrix = j*PI/180;
+				double xx = sin(tiltmatrix)*cos(rotmatrix);
+				double yy = sin(tiltmatrix)*sin(rotmatrix);
+				double zz = cos(tiltmatrix);
 
-//    	std::cout << anglesResolution << std::endl;
-//    	std::cout << "------------------------------" << std::endl;
-//    	std::cout << MAT_ELEM(anglesResolution, 0, 0) << " " << MAT_ELEM(anglesResolution, 0, 1) << std::endl;
-    	int aux;
-    	for (size_t i=0; i<Nrot; i++)
-    		for (size_t j=0; j<Ntilt; j++)
-    		{
-    			objIdOut = mdparticles.addObject();
-    			mdparticles.setValue(MDL_ANGLE_ROT, (double)i, objIdOut);
-    			mdparticles.setValue(MDL_ANGLE_TILT, (double)j, objIdOut);
-
-
-    			aux = MAT_ELEM(anglesResolution, i,j);
-    			mdparticles.setValue(MDL_COUNT, (size_t) aux, objIdOut);
-    		}
-
-    	FileName fn;
-    	fn = fn_fscmd_folder+"ParticleResolution.xmd";
-    	mdparticles.write(fn);
-
-    	for (size_t k = 0; k<angles.mdimx; k++)
-		{
-		double rot = MAT_ELEM(angles, 0, k);
-		double tilt = MAT_ELEM(angles, 1, k);
-
-		objIdOut = mdDirRes.addObject();
-		mdDirRes.setValue(MDL_ANGLE_ROT, rot, objIdOut);
-		mdDirRes.setValue(MDL_ANGLE_TILT, tilt, objIdOut);
-
-		mdDirRes.setValue(MDL_COUNT, (size_t) dAi(directionAnisotropy, k), objIdOut);
-
-		}
-
-		fn = fn_fscmd_folder+"PolarResolution.xmd";
-		mdDirRes.write(fn);
-    }
-
-
-    void particleDistributionToResolutionCorrected(FileName fnParticles, MetaData mdparticles,
-        		MultidimArray<double> &directionAnisotropy, MetaData &mdDirRes,
-				MultidimArray<double> &resDirFSC)
-        {
-        	MetaData md1;
-        	md1.read(fnParticles);
-
-        	Matrix2D<int> anglesResolution;
-        	size_t Nrot = 360;
-        	size_t Ntilt = 91;
-        	anglesResolution.initZeros(Nrot, Ntilt);
-
-        	double tilt, rot;
-        	size_t objId, objIdOut;
-
-        	int Nsamples = 1000;
-        	size_t idxRot, idxTilt;
-        	double x_dir, y_dir, z_dir, cosAngle;
-
-        	std::default_random_engine generator;
-			std::uniform_real_distribution<double> distribution(0.0,1.0);
-
-			// From particles to Fourier planes
-			// It computes the perpendicular plane to the direction associented
-			// with each particle. All directions contained in the perpendicular
-			// are the directions for which the particle contributs to the directional
-			// resolution.
-        	FOR_ALL_OBJECTS_IN_METADATA(md1)
-    		{
-//    			objId = md1.addObject();
-    			md1.getValue(MDL_ANGLE_TILT, tilt, __iter.objId);
-    			md1.getValue(MDL_ANGLE_ROT,   rot, __iter.objId);
-
-    			rot  *= PI/180;
-    			tilt *= PI/180;
-
-				x_dir = sin(tilt)*cos(rot);
-				y_dir = sin(tilt)*sin(rot);
-				z_dir = cos(tilt);
-
-    			for (size_t k=0; k<360; k++)
-    			{
-    				//Random sphere picking
-//    				double theta = 2*PI*distribution(generator);
-    				double theta = k*PI/180;
-    				double phi = distribution(generator);
-
-    				// The original formula is acos(2v -1),
-    				// I write acos(v) becase I only need the upper part of the sphere
-    				phi = acos(phi);
-
-    				// tt defines the perpendicular plane to the direction x_dir, y_dir, z_dir
-    				// that plane is given by the equation
-    				// x_dir*sin(phi)*cos(theta) + y_dir*sin(phi)*sin(theta) + z_dir*cos(phi) = 0
-    				// Solving this equation the phi angle is obtained for a given theta
-					double tt;
-					tt = atan( - z_dir/(x_dir*cos(theta) + y_dir*sin(theta)) ) * 180/PI;
-					if ((std::isnan(tt) == 1) || (tt<0))
-						continue;
-//					idxRot  = (size_t) round(theta*180/PI); // (int) round(theta*180/PI);
-					idxTilt = (size_t) round(tt);           // (int) round(tt);
-//
-					MAT_ELEM(anglesResolution, k, idxTilt) += 1;
-    			}
-
-    		}
-
-        	// Here we store in a metadata, the contribution of each particle
-        	// to the perpendicular plane computed above
-        	size_t idxMd;
-        	for (size_t i=0; i<Nrot; i++)
-        	{
-        		for (size_t j=0; j<Ntilt; j++)
-        		{
-        			idxMd = mdDirRes.addObject();
-        			mdDirRes.setValue(MDL_ANGLE_ROT, (double) i, idxMd);
-        			mdDirRes.setValue(MDL_ANGLE_TILT, (double) j, idxMd);
-        			mdDirRes.setValue(MDL_COUNT, (size_t) MAT_ELEM(anglesResolution, i, j), idxMd);
-        		}
-        	}
-
-        	FileName fn;
-        	fn = fn_fscmd_folder+"Particles2ResDistribution.xmd";
-    		mdDirRes.write(fn);
-
-    		mdDirRes.clear();
-
-    		// Directional resolution is store in a metadata
-    		MetaData mdDirfsc;
-        	for (size_t k = 0; k<angles.mdimx; k++)
-    		{
-				double rot = MAT_ELEM(angles, 0, k);
-				double tilt = MAT_ELEM(angles, 1, k);
-
-				objIdOut = mdDirfsc.addObject();
-				mdDirfsc.setValue(MDL_ANGLE_ROT, rot, objIdOut);
-				mdDirfsc.setValue(MDL_ANGLE_TILT, tilt, objIdOut);
-				mdDirfsc.setValue(MDL_COUNT, (size_t) dAi(directionAnisotropy, k), objIdOut);
-				mdDirfsc.setValue(MDL_RESOLUTION_FRC, dAi(resDirFSC, k), objIdOut);
-    		}
-
-    		fn = fn_fscmd_folder+"DirectionalResolution.xmd";
-    		mdDirfsc.write(fn);
-
-    		// Resolution - particles
-    		// Each particle contributes to a perpendicular plane
-    		// Some Fourier coefficientes of that plane contributes to the
-    		// directional resolution, in particular, those that are in the cone.
-    		// However, not all voxels use the same weights. This funcion
-    		// consider that weights
-    		MetaData mdparticle2Res;
-    		double x_plane, y_plane, z_plane;
-    		MultidimArray<double> particlesFSC(angles.mdimx);
-			cosAngle = cos(ang_con);
-			double aux = 4.0/((cos(ang_con) -1)*(cos(ang_con) -1));
-    		for (size_t k = 0; k<angles.mdimx; k++)
-			{
-				double rot = MAT_ELEM(angles, 0, k);
-				double tilt = MAT_ELEM(angles, 1, k);
-
-				rot *= PI/180;
-				tilt *= PI/180;
-
-		    	x_dir = sin(tilt)*cos(rot);
-		    	y_dir = sin(tilt)*sin(rot);
-		    	z_dir = cos(tilt);
-		    	double wt = 0;
-		    	double w  = 0;
-		    	for (size_t i=0; i<Nrot; i++)
+				double w = 0;
+				double wt = 0;
+				for (size_t k = 0; k<angles.mdimx; k++)
 				{
-					for (size_t j=0; j<Ntilt; j++)
-					{
-						rot =  (double) i*PI/180;
-						tilt = (double) j*PI/180;
-						x_plane = sin(tilt)*cos(rot);
-						y_plane = sin(tilt)*sin(rot);
-						z_plane = cos(tilt);
+					double rot = MAT_ELEM(angles, 0, k);
+					double tilt = MAT_ELEM(angles, 1, k);
 
-						double cosine = fabs(x_dir*x_plane + y_dir*y_plane + z_dir*z_plane);
+					rot *= PI/180;
+					tilt *= PI/180;
+
+					double x_dir = sin(tilt)*cos(rot);
+					double y_dir = sin(tilt)*sin(rot);
+					double z_dir = cos(tilt);
+
+					double cosine = fabs(x_dir*xx + y_dir*yy + z_dir*zz);
+					if (cosine>=cosAngle)
+					{
 						cosine = exp( -((cosine -1)*(cosine -1))*aux );
-						w += cosine*( (double) MAT_ELEM(anglesResolution, i, j) );
+						w += cosine*( dAi(resDirFSC, k) );
 						wt += cosine;
 					}
 				}
 
-		    	dAi(particlesFSC, k) = w/wt;
-				objIdOut = mdparticle2Res.addObject();
-				mdparticle2Res.setValue(MDL_ANGLE_ROT, MAT_ELEM(angles, 0, k), objIdOut);
-				mdparticle2Res.setValue(MDL_ANGLE_TILT, MAT_ELEM(angles, 1, k), objIdOut);
-				mdparticle2Res.setValue(MDL_WEIGHT, dAi(particlesFSC, k), objIdOut);
-				mdparticle2Res.setValue(MDL_RESOLUTION_FRC, dAi(resDirFSC, k), objIdOut);
+	    	double wRes = w/wt;
+			objIdOut = mdOut.addObject();
+			mdOut.setValue(MDL_ANGLE_ROT, i, objIdOut);
+			mdOut.setValue(MDL_ANGLE_TILT, j, objIdOut);
+			mdOut.setValue(MDL_RESOLUTION_FRC, wRes, objIdOut);
 			}
-    		fn = fn_fscmd_folder+"Particles2Resolution2.xmd";
-    		mdparticle2Res.write(fn);
-        }
+		}
+		mdOut.write(fn);
+    }
+
+
+    void particlesAnalysis(FileName &fnParticles, FileName &fnParticlesToResolution)
+    {
+    	MetaData md1;
+    	md1.read(fnParticles);
+
+    	Matrix2D<double> anglesResolution, partDist;
+    	size_t Nrot = 360;
+    	size_t Ntilt = 91;
+    	anglesResolution.initZeros(Nrot, Ntilt);
+    	partDist = anglesResolution;
+
+    	double tilt, rot;
+    	size_t objId, objIdOut;
+
+    	int Nsamples = 1000;
+    	size_t idxRot, idxTilt;
+    	double x_dir, y_dir, z_dir, cosAngle;
+
+    	std::default_random_engine generator;
+		std::uniform_real_distribution<double> distribution(0.0,1.0);
+
+		// From particles to Fourier planes
+		// It computes the perpendicular plane to the direction associented
+		// with each particle. All directions contained in the perpendicular
+		// are the directions for which the particle contributs to the directional
+		// resolution.
+    	FOR_ALL_OBJECTS_IN_METADATA(md1)
+		{
+//    			objId = md1.addObject();
+			md1.getValue(MDL_ANGLE_TILT, tilt, __iter.objId);
+			md1.getValue(MDL_ANGLE_ROT,   rot, __iter.objId);
+
+			rot  *= PI/180;
+			tilt *= PI/180;
+
+			x_dir = sin(tilt)*cos(rot);
+			y_dir = sin(tilt)*sin(rot);
+			z_dir = cos(tilt);
+
+		    double ttilt = acos(z_dir)*180/PI;
+		    double rrot = atan2(y_dir,x_dir)*180/PI;
+		    std::cout << ttilt << " " << rrot << std::endl;
+		    if (ttilt>90)
+		    {
+		    	ttilt = 180 - ttilt;
+		    	rrot = rrot + 180;
+		    }
+		    else
+		    {
+		        if (rrot<0)
+		        	rrot = rrot + 360;
+		    }
+
+		    std::cout << x_dir << " " << y_dir << " " << z_dir << std::endl;
+		    std::cout << sin(ttilt*PI/180)*cos(rrot*PI/180) << " " << sin(ttilt*PI/180)*sin(rrot*PI/180) << " " << cos(ttilt*PI/180) << std::endl;
+		    std::cout << rot << " " << tilt << " " << z_dir << std::endl;
+		    std::cout << rrot << " " << ttilt << std::endl;
+		    std::cout << "-----------------------------------" << std::endl;
+		    MAT_ELEM(partDist, (size_t) rrot, (size_t) ttilt) += 1;
+
+
+			for (size_t k=0; k<360; k++)
+			{
+				//Random sphere picking
+//    				double theta = 2*PI*distribution(generator);
+				double theta = k*PI/180;
+//				double phi = distribution(generator);
+
+				// The original formula is acos(2v -1),
+				// I write acos(v) because I only need the upper part of the sphere
+//				phi = acos(phi);
+
+				// tt defines the perpendicular plane to the direction x_dir, y_dir, z_dir
+				// that plane is given by the equation
+				// x_dir*sin(phi)*cos(theta) + y_dir*sin(phi)*sin(theta) + z_dir*cos(phi) = 0
+				// Solving this equation the phi angle is obtained for a given theta
+				double tt;
+				tt = atan( - z_dir/(x_dir*cos(theta) + y_dir*sin(theta)) ) * 180/PI;
+//				std::cout << tt << std::endl;
+
+				if ((std::isnan(tt) == 1) || tt<0)
+					continue;
+//					idxRot  = (size_t) round(theta*180/PI); // (int) round(theta*180/PI);
+				idxTilt = (size_t) round(tt);           // (int) round(tt);
+//
+
+				MAT_ELEM(anglesResolution, k, idxTilt) += 1;
+			}
+		}
+
+		MetaData mdparticle2Res;
+		for (size_t i=0; i<Nrot; i++)
+		{
+			for (size_t j=0; j<Ntilt; j++)
+			{
+				objIdOut = mdparticle2Res.addObject();
+				mdparticle2Res.setValue(MDL_ANGLE_ROT, (double) i, objIdOut);
+				mdparticle2Res.setValue(MDL_ANGLE_TILT, (double) j, objIdOut);
+				mdparticle2Res.setValue(MDL_WEIGHT, MAT_ELEM(anglesResolution, i, j), objIdOut);
+				mdparticle2Res.setValue(MDL_COUNT, (size_t) MAT_ELEM(partDist, i, j), objIdOut);
+			}
+		}
+
+		mdparticle2Res.write(fnParticlesToResolution);
+
+
+    	/*
+		// Resolution - particles
+		// Each particle contributes to a perpendicular plane
+		// Some Fourier coefficientes of that plane contributes to the
+		// directional resolution, in particular, those that are in the cone.
+		// However, not all voxels use the same weights. This funcion
+		// consider that weights
+		MetaData mdparticle2Res;
+		double x_plane, y_plane, z_plane;
+		MultidimArray<double> particlesFSC(angles.mdimx);
+		cosAngle = cos(ang_con);
+		double aux = 4.0/((cos(ang_con) -1)*(cos(ang_con) -1));
+
+		for (double i=0; i<Nrot; i++)
+		{
+			rot =  i*PI/180;
+			for (double j=0; j<Ntilt; j++)
+			{
+				double wt = 0;
+				double w  = 0;
+
+				tilt = j*PI/180;
+				x_plane = sin(tilt)*cos(rot);
+				y_plane = sin(tilt)*sin(rot);
+				z_plane = cos(tilt);
+
+				for (size_t k = 0; k<angles.mdimx; k++)
+				{
+					double rotdir = MAT_ELEM(angles, 0, k);
+					double tiltdir = MAT_ELEM(angles, 1, k);
+
+					rotdir *= PI/180;
+					tiltdir *= PI/180;
+
+					x_dir = sin(tiltdir)*cos(rotdir);
+					y_dir = sin(tiltdir)*sin(rotdir);
+					z_dir = cos(tiltdir);
+
+					double cosine = fabs(x_dir*x_plane + y_dir*y_plane + z_dir*z_plane);
+
+					if (cosine>=cosAngle)
+					{
+						cosine = exp( -((cosine -1)*(cosine -1))*aux );
+						w += cosine*( (double) MAT_ELEM(anglesResolution, (size_t) i, (size_t) j) );
+						wt += cosine;
+					}
+				}
+
+				double weightPart = w/wt;
+				objIdOut = mdparticle2Res.addObject();
+				mdparticle2Res.setValue(MDL_ANGLE_ROT, i, objIdOut);
+				mdparticle2Res.setValue(MDL_ANGLE_TILT, j, objIdOut);
+				mdparticle2Res.setValue(MDL_WEIGHT, weightPart, objIdOut);
+				mdparticle2Res.setValue(MDL_COUNT, MAT_ELEM(partDist, (size_t) i, (size_t) j), objIdOut);
+			}
+		}
+
+		mdparticle2Res.write(fnParticlesToResolution);
+		*/
+    }
 
 
     void getCompleteFourier(MultidimArray<double> &V, MultidimArray<double> &newV,
@@ -1886,6 +1565,12 @@ public:
 
     void run()
     {
+
+    	std::cout << "ang_con" << ang_con << std::endl;
+    	if (ang_con == -1)
+			doCrossValidation = true;
+		else
+			doCrossValidation = false;
 //    	tuningAngularDistribution();
 //    	exit(0);
 
@@ -1896,7 +1581,7 @@ public:
 
     	prepareData(fnhalf1, fnhalf2, half1, half2, test);
     	int m1sizeX = XSIZE(phalf1), m1sizeY = YSIZE(phalf1), m1sizeZ = ZSIZE(phalf1);
-    	doSSNR = false;
+
     	if (doSSNR)
     		estimateSSNR(phalf1, phalf2, m1sizeX, m1sizeY, m1sizeZ);
 
@@ -1934,7 +1619,7 @@ public:
     	MultidimArray<std::complex<double>> f1, f2;
     	fscShell(FT1, FT2, freq_fourier_x, freq_fourier_y, freq_fourier_z, freqMap, m1sizeX, indexesFourier, indexesFourier2, cutoff, f1, f2);
 
-    	doCrossValidation = true;
+
     	bool angledependence = false;
     	double dresfsc, lastcross = 1e38;
     	FileName fnmd;
@@ -1946,7 +1631,7 @@ public:
 			size_t objId;
 			MetaData mdcrossval;
 
-			for (double myangle = 5; myangle < 45; myangle = myangle + 1)
+			for (double myangle = 10; myangle < 41; myangle = myangle + 1)
 			{
 				angCon = myangle*PI/180;
 				cross = 0;
@@ -1993,7 +1678,11 @@ public:
 			mdcrossval.write(fn_fscmd_folder+"crossValidation.xmd");
 		}
 
-    	std::cout << "The best cone angle is " << ang_con << std::endl;
+    	if (doCrossValidation == true)
+    		std::cout << "The best cone angle is " << ang_con << std::endl;
+    	else
+    		std::cout << "The chosen cone angle is " << ang_con << std::endl;
+
     	std::cout << "                       " << std::endl;
     	generateDirections(angles, true);
     	ang_con = ang_con*PI/180;
@@ -2069,6 +1758,27 @@ public:
 				DIRECT_MULTIDIM_ELEM(threeD_FSC, n) = 1.0;
 		}
 
+
+
+		//This code fix the empty line line in Fourier space
+		size_t auxVal;
+		auxVal = YSIZE(threeD_FSC)/2;
+    	long n=0;
+    	for(size_t k=0; k<ZSIZE(threeD_FSC); ++k)
+    	{
+    		for(size_t i=0; i<YSIZE(threeD_FSC); ++i)
+    		{
+    			for(size_t j=0; j<XSIZE(threeD_FSC); ++j)
+    			{
+    				if ((j == 0) && (i>auxVal))
+    					{
+    					DIRECT_A3D_ELEM(threeD_FSC,k,i,j) = DIRECT_A3D_ELEM(threeD_FSC,k,i,j+1);
+    					}
+   					++n;
+    			}
+    		}
+    	}
+
 		//DIRECTIONAL FILTERED MAP
 		MultidimArray<double> filteredMap;
 		directionalFilter(FT1, threeD_FSC, filteredMap, m1sizeX, m1sizeY, m1sizeZ);
@@ -2077,7 +1787,7 @@ public:
 		saveImg2() = filteredMap;
 		saveImg2.write(fn_fscmd_folder+"filteredMap.mrc");
 
-//		//FULL 3DFSC MAP
+		//FULL 3DFSC MAP
 		FileName fn;
 		createFullFourier(threeD_FSC, fn_3dfsc, m1sizeX, m1sizeY, m1sizeZ);
 
@@ -2091,10 +1801,16 @@ public:
 		//TODO: Include this in the frequency creation
 		createFullFourier(sphere, fn, m1sizeX, m1sizeY, m1sizeZ);
 
+		//DIRECTIONAL RESOLUTION DISTRIBUTION
+		fn = fn_fscmd_folder+"Resolution_Distribution.xmd";
+		resolutionDistribution(resDirFSC, fn);
+
+
 		if (fnParticles != "")
 		{
 			MetaData mdparticles, mdDirRes;
-			particleDistributionToResolutionCorrected(fnParticles, mdparticles, directionAnisotropy, mdDirRes, resDirFSC);
+			fn = fn_fscmd_folder+"ParticlesDist_and_Contribution.xmd";
+			particlesAnalysis(fnParticles, fn);
 		}
 
 		std::cout << "-------------Finished-------------" << std::endl;
