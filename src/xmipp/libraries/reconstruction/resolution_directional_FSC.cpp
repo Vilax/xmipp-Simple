@@ -1346,6 +1346,165 @@ public:
 		mdOut.write(fn);
     }
 
+    void particlesAnalysis2(FileName &fnParticles, FileName &fnParticlesToResolution)
+	{
+		MetaData md1;
+		md1.read(fnParticles);
+
+		Matrix2D<double> anglesResolution, partDist;
+		size_t Nrot = 360;
+		size_t Ntilt = 91;
+		anglesResolution.initZeros(Nrot, Ntilt);
+		partDist = anglesResolution;
+
+		double tilt, rot;
+		size_t objId, objIdOut;
+
+		int Nsamples = 1000;
+		size_t idxRot, idxTilt;
+		double x_dir, y_dir, z_dir, cosAngle, x1, y1, z1;
+
+		cosAngle = cos(88*PI/180);
+
+		// From particles to Fourier planes
+		// It computes the perpendicular plane to the direction associented
+		// with each particle. All directions contained in the perpendicular
+		// are the directions for which the particle contributs to the directional
+		// resolution.
+		std::string ext;
+		ext = fnParticles.getExtension().c_str();
+		std::cout << ext << std::endl;
+		if (ext == "xmd")
+		{
+			std::cout << ".xmd extension" << std::endl;
+
+			FOR_ALL_OBJECTS_IN_METADATA(md1)
+			{
+	//    			objId = md1.addObject();
+				md1.getValue(MDL_ANGLE_TILT, tilt, __iter.objId);
+				md1.getValue(MDL_ANGLE_ROT,   rot, __iter.objId);
+
+				rot  *= PI/180;
+				tilt *= PI/180;
+
+				x_dir = sin(tilt)*cos(rot);
+				y_dir = sin(tilt)*sin(rot);
+				z_dir = cos(tilt);
+
+				double ttilt = acos(z_dir)*180/PI;
+				double rrot = atan2(y_dir,x_dir)*180/PI;
+	//		    std::cout << ttilt << " " << rrot << std::endl;
+				if (ttilt>90)
+				{
+					ttilt = 180 - ttilt;
+					rrot = rrot + 180;
+				}
+				else
+				{
+					if (rrot<0)
+						rrot = rrot + 360;
+				}
+
+	//		    std::cout << x_dir << " " << y_dir << " " << z_dir << std::endl;
+	//		    std::cout << sin(ttilt*PI/180)*cos(rrot*PI/180) << " " << sin(ttilt*PI/180)*sin(rrot*PI/180) << " " << cos(ttilt*PI/180) << std::endl;
+	//		    std::cout << rot << " " << tilt << " " << z_dir << std::endl;
+	//		    std::cout << rrot << " " << ttilt << std::endl;
+	//		    std::cout << "-----------------------------------" << std::endl;
+				MAT_ELEM(partDist, (size_t) rrot, (size_t) ttilt) += 1;
+
+
+				for (double k=0; k<Nrot; k++)
+				{
+					for (double l=0; l<Ntilt; l++)
+					{
+						double k_r = k*PI/180;
+						double l_r = l*PI/180;
+
+						double cosine = fabs(sin(l_r)*cos(k_r)*x_dir + sin(l_r)*sin(k_r)*y_dir + cos(l_r)*z_dir);
+//						std::cout << x_dir << "  " << y_dir << " " << z_dir << std::endl;
+//						std::cout << sin(l_r)*cos(k_r) << "  " << sin(l_r)*sin(k_r) << " " << cos(l_r) << std::endl;
+//						std::cout << "cosine = " << cosine << "cosAngle " << cosAngle << std::endl;
+
+						if (cosine<cosAngle)
+							MAT_ELEM(anglesResolution, k, l) += 1;
+					}
+				}
+//				std::cout << "-------------------------------" << std::endl;
+			}
+		}
+		if (ext == "star")
+		{
+			std::cout << ".star extension" << std::endl;
+
+			FOR_ALL_OBJECTS_IN_METADATA(md1)
+			{
+	//    			objId = md1.addObject();
+				md1.getValue(RLN_ANGLE_TILT, tilt, __iter.objId);
+				md1.getValue(RLN_ANGLE_ROT,   rot, __iter.objId);
+
+				rot  *= PI/180;
+				tilt *= PI/180;
+
+				x_dir = sin(tilt)*cos(rot);
+				y_dir = sin(tilt)*sin(rot);
+				z_dir = cos(tilt);
+
+				double ttilt = acos(z_dir)*180/PI;
+				double rrot = atan2(y_dir,x_dir)*180/PI;
+	//		    std::cout << ttilt << " " << rrot << std::endl;
+				if (ttilt>90)
+				{
+					ttilt = 180 - ttilt;
+					rrot = rrot + 180;
+				}
+				else
+				{
+					if (rrot<0)
+						rrot = rrot + 360;
+				}
+
+	//		    std::cout << x_dir << " " << y_dir << " " << z_dir << std::endl;
+	//		    std::cout << sin(ttilt*PI/180)*cos(rrot*PI/180) << " " << sin(ttilt*PI/180)*sin(rrot*PI/180) << " " << cos(ttilt*PI/180) << std::endl;
+	//		    std::cout << rot << " " << tilt << " " << z_dir << std::endl;
+	//		    std::cout << rrot << " " << ttilt << std::endl;
+	//		    std::cout << "-----------------------------------" << std::endl;
+				MAT_ELEM(partDist, (size_t) rrot, (size_t) ttilt) += 1;
+
+
+				for (double k=0; k<Nrot; k++)
+				{
+					for (double l=0; l<Ntilt; l++)
+					{
+						double k_r = k*PI/180;
+						double l_r = l*PI/180;
+
+						double cosine = sin(l_r)*cos(k_r)*x_dir + sin(l_r)*sin(k_r)*y_dir + cos(l_r)*z_dir;
+
+						if (cosine<cosAngle)
+							MAT_ELEM(anglesResolution, k, l) += 1;
+					}
+				}
+			}
+		}
+
+
+
+		MetaData mdparticle2Res;
+		for (size_t i=0; i<Nrot; i++)
+		{
+			for (size_t j=0; j<Ntilt; j++)
+			{
+				objIdOut = mdparticle2Res.addObject();
+				mdparticle2Res.setValue(MDL_ANGLE_ROT, (double) i, objIdOut);
+				mdparticle2Res.setValue(MDL_ANGLE_TILT, (double) j, objIdOut);
+				mdparticle2Res.setValue(MDL_WEIGHT, MAT_ELEM(anglesResolution, i, j), objIdOut);
+				mdparticle2Res.setValue(MDL_COUNT, (size_t) MAT_ELEM(partDist, i, j), objIdOut);
+			}
+		}
+
+		mdparticle2Res.write(fnParticlesToResolution);
+	}
+
 
     void particlesAnalysis(FileName &fnParticles, FileName &fnParticlesToResolution)
     {
@@ -1373,69 +1532,82 @@ public:
 		// with each particle. All directions contained in the perpendicular
 		// are the directions for which the particle contributs to the directional
 		// resolution.
-    	FOR_ALL_OBJECTS_IN_METADATA(md1)
-		{
-//    			objId = md1.addObject();
-			md1.getValue(MDL_ANGLE_TILT, tilt, __iter.objId);
-			md1.getValue(MDL_ANGLE_ROT,   rot, __iter.objId);
+		FileName ext;
+		ext = fnParticles.getExtension();
+    	if (ext == ".xmd")
+    	{
+    		std::cout << ".xmd extension" << std::endl;
 
-			rot  *= PI/180;
-			tilt *= PI/180;
-
-			x_dir = sin(tilt)*cos(rot);
-			y_dir = sin(tilt)*sin(rot);
-			z_dir = cos(tilt);
-
-		    double ttilt = acos(z_dir)*180/PI;
-		    double rrot = atan2(y_dir,x_dir)*180/PI;
-		    std::cout << ttilt << " " << rrot << std::endl;
-		    if (ttilt>90)
-		    {
-		    	ttilt = 180 - ttilt;
-		    	rrot = rrot + 180;
-		    }
-		    else
-		    {
-		        if (rrot<0)
-		        	rrot = rrot + 360;
-		    }
-
-		    std::cout << x_dir << " " << y_dir << " " << z_dir << std::endl;
-		    std::cout << sin(ttilt*PI/180)*cos(rrot*PI/180) << " " << sin(ttilt*PI/180)*sin(rrot*PI/180) << " " << cos(ttilt*PI/180) << std::endl;
-		    std::cout << rot << " " << tilt << " " << z_dir << std::endl;
-		    std::cout << rrot << " " << ttilt << std::endl;
-		    std::cout << "-----------------------------------" << std::endl;
-		    MAT_ELEM(partDist, (size_t) rrot, (size_t) ttilt) += 1;
-
-
-			for (size_t k=0; k<360; k++)
+			FOR_ALL_OBJECTS_IN_METADATA(md1)
 			{
-				//Random sphere picking
-//    				double theta = 2*PI*distribution(generator);
-				double theta = k*PI/180;
-//				double phi = distribution(generator);
+	//    			objId = md1.addObject();
+				md1.getValue(MDL_ANGLE_TILT, tilt, __iter.objId);
+				md1.getValue(MDL_ANGLE_ROT,   rot, __iter.objId);
 
-				// The original formula is acos(2v -1),
-				// I write acos(v) because I only need the upper part of the sphere
-//				phi = acos(phi);
+				rot  *= PI/180;
+				tilt *= PI/180;
 
-				// tt defines the perpendicular plane to the direction x_dir, y_dir, z_dir
-				// that plane is given by the equation
-				// x_dir*sin(phi)*cos(theta) + y_dir*sin(phi)*sin(theta) + z_dir*cos(phi) = 0
-				// Solving this equation the phi angle is obtained for a given theta
-				double tt;
-				tt = atan( - z_dir/(x_dir*cos(theta) + y_dir*sin(theta)) ) * 180/PI;
-//				std::cout << tt << std::endl;
+				x_dir = sin(tilt)*cos(rot);
+				y_dir = sin(tilt)*sin(rot);
+				z_dir = cos(tilt);
 
-				if ((std::isnan(tt) == 1) || tt<0)
-					continue;
-//					idxRot  = (size_t) round(theta*180/PI); // (int) round(theta*180/PI);
-				idxTilt = (size_t) round(tt);           // (int) round(tt);
-//
+				double ttilt = acos(z_dir)*180/PI;
+				double rrot = atan2(y_dir,x_dir)*180/PI;
+	//		    std::cout << ttilt << " " << rrot << std::endl;
+				if (ttilt>90)
+				{
+					ttilt = 180 - ttilt;
+					rrot = rrot + 180;
+				}
+				else
+				{
+					if (rrot<0)
+						rrot = rrot + 360;
+				}
 
-				MAT_ELEM(anglesResolution, k, idxTilt) += 1;
+	//		    std::cout << x_dir << " " << y_dir << " " << z_dir << std::endl;
+	//		    std::cout << sin(ttilt*PI/180)*cos(rrot*PI/180) << " " << sin(ttilt*PI/180)*sin(rrot*PI/180) << " " << cos(ttilt*PI/180) << std::endl;
+	//		    std::cout << rot << " " << tilt << " " << z_dir << std::endl;
+	//		    std::cout << rrot << " " << ttilt << std::endl;
+	//		    std::cout << "-----------------------------------" << std::endl;
+				MAT_ELEM(partDist, (size_t) rrot, (size_t) ttilt) += 1;
+
+
+				for (size_t k=0; k<360; k++)
+				{
+					//Random sphere picking
+	//    				double theta = 2*PI*distribution(generator);
+					double theta = k*PI/180;
+	//				double phi = distribution(generator);
+
+					// The original formula is acos(2v -1),
+					// I write acos(v) because I only need the upper part of the sphere
+	//				phi = acos(phi);
+
+					// tt defines the perpendicular plane to the direction x_dir, y_dir, z_dir
+					// that plane is given by the equation
+					// x_dir*sin(phi)*cos(theta) + y_dir*sin(phi)*sin(theta) + z_dir*cos(phi) = 0
+					// Solving this equation the phi angle is obtained for a given theta
+					double tt;
+					tt = atan( - z_dir/(x_dir*cos(theta) + y_dir*sin(theta)) ) * 180/PI;
+	//				std::cout << tt << std::endl;
+
+					if ((std::isnan(tt) == 1) || tt<0)
+						continue;
+	//					idxRot  = (size_t) round(theta*180/PI); // (int) round(theta*180/PI);
+					idxTilt = (size_t) round(tt);           // (int) round(tt);
+	//
+
+					MAT_ELEM(anglesResolution, k, idxTilt) += 1;
+				}
 			}
-		}
+    	}
+    	if (ext == ".star")
+    	{
+    		std::cout << ".star extension" << std::endl;
+    	}
+
+
 
 		MetaData mdparticle2Res;
 		for (size_t i=0; i<Nrot; i++)
@@ -1810,7 +1982,7 @@ public:
 		{
 			MetaData mdparticles, mdDirRes;
 			fn = fn_fscmd_folder+"ParticlesDist_and_Contribution.xmd";
-			particlesAnalysis(fnParticles, fn);
+			particlesAnalysis2(fnParticles, fn);
 		}
 
 		std::cout << "-------------Finished-------------" << std::endl;

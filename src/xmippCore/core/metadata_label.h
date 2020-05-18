@@ -367,6 +367,7 @@ enum MDLabel
     MDL_RESOLUTION_DPR, ///<differential phase residual (double)
     MDL_RESOLUTION_ERRORL2, ///<Error in l2 (double)
     MDL_RESOLUTION_FRC, ///<Fourier shell correlation (double)
+	MDL_RESOLUTION_ANISOTROPY, /// Percentage of voxels out of the FSC shell (double)
     MDL_RESOLUTION_FRCRANDOMNOISE, ///<Fourier shell correlation noise (double)
     MDL_RESOLUTION_FREQ, ///<Frequency in 1/A (double)
     MDL_RESOLUTION_FREQ2, ///< Frequency in 1/A squared (double)
@@ -485,6 +486,8 @@ enum MDLabel
     RLN_AREA_ID, ///< ID for the area (or field of view). If one does not use (tilt) series, area would be the same as micrograph...
     RLN_AREA_NAME, ///< Name for the area (or field of view). If one does not use (tilt) series, area would be the same as micrograph...
     RLN_COMMENT, // The RLN_COMMENT is handled specially as well
+	RLN_ANGLE_ROT, // This is the rot angle in an angular assignment (double) in degrees
+	RLN_ANGLE_TILT, // This is the tilt angle in an angular assignment (double) in degrees
 
     RLN_CTF_BFACTOR, ///< B-factor
     RLN_CTF_SCALEFACTOR, ///< linear scale-factor
@@ -1719,6 +1722,7 @@ private:
         MDL::addLabel(MDL_RESOLUTION_DPR, LABEL_DOUBLE, "resolutionDPR");
         MDL::addLabel(MDL_RESOLUTION_ERRORL2, LABEL_DOUBLE, "resolutionErrorL2");
         MDL::addLabel(MDL_RESOLUTION_FRC, LABEL_DOUBLE, "resolutionFRC");
+        MDL::addLabel(MDL_RESOLUTION_ANISOTROPY, LABEL_DOUBLE, "resolutionAnisotropy");
         MDL::addLabel(MDL_RESOLUTION_FRCRANDOMNOISE, LABEL_DOUBLE, "resolutionFRCRandomNoise");
         MDL::addLabel(MDL_RESOLUTION_FREQ, LABEL_DOUBLE, "resolutionFreqFourier");
         MDL::addLabel(MDL_RESOLUTION_FREQ2, LABEL_DOUBLE, "resolutionFreqFourier2");
@@ -1879,6 +1883,8 @@ private:
         /*Relion labels */
         MDL::addLabel(RLN_AREA_ID, LABEL_SIZET, "rlnAreaId");
         MDL::addLabel(RLN_AREA_NAME, LABEL_STRING, "rlnAreaName");
+        MDL::addLabel(RLN_ANGLE_ROT, LABEL_DOUBLE, "rlnAngleRot");
+        MDL::addLabel(RLN_ANGLE_TILT, LABEL_DOUBLE, "rlnAngleTilt");
 
         MDL::addLabel(RLN_CTF_BFACTOR, LABEL_DOUBLE, "rlnBfactor");
         MDL::addLabel(RLN_CTF_SCALEFACTOR, LABEL_DOUBLE, "rlnCtfScalefactor");
