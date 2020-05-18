@@ -13,11 +13,8 @@ This is a light version of Xmipp, which only contains the basic tools addres to 
 
 Start by cloning the repository from GitHub and go there.
 ```
-git clone https://github.com/I2PC/xmipp xmipp-bundle
-cd xmipp-bundle
+git clone https://github.com/Vilax/xmipp-lite.git
+cd xmipp-lite
 ```
-
-Run `xmipp` script in the root folder via Scipion (it might be necessary to add execute permission via `chmod +x xmipp`)
+Run `xmipp` script in the root folder (it might be necessary to add execute permission via `chmod +x xmipp`)
 This script will checkout additional repositories and build Xmipp for you.
-
-You can see the whole usage of the script with `./xmipp --help`. The most useful options are `br=branch_name` to select a specific branch to be checkout-ed, and `N=#processors` to use for the build.
