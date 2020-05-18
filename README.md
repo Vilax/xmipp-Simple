@@ -3,11 +3,11 @@
 [![Technical debt](https://sonarcloud.io/api/project_badges/measure?project=Xmipp&metric=sqale_index)](https://sonarcloud.io/component_measures?id=Xmipp&metric=sqale_index)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Xmipp&metric=bugs)](https://sonarcloud.io/project/issues?id=Xmipp&resolved=false&types=BUG)
 --->
-# Xmipp-Simple
+# Xmipp-Lite
 
-Welcome to Xmipp. Xmipp is a suite of image processing programs, primarily aimed at single-particle 3D electron microscopy. 
+Xmipp is a suite of image processing programs, primarily aimed at single-particle 3D electron microscopy. 
 
-This is a light version of Xmipp, which only contains the basic tools addres to estimate resolution measuremetns
+This is a light version of Xmipp, which only contains the basic tools addres to estimate resolution measurements.
 
 ## Getting started
 
