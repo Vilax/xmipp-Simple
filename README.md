@@ -18,3 +18,10 @@ cd xmipp-lite
 ```
 Run `xmipp` script in the root folder (it might be necessary to add execute permission via `chmod +x xmipp`)
 This script will checkout additional repositories and build Xmipp for you.
+
+## Troubleshooting
+
+There are some dependencies that are required. If in the Xmipp compilation some dependences are needed run
+```
+sudo apt-get install libsqlite3-dev libtiff5-dev libhdf5-dev
+```
