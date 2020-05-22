@@ -46,62 +46,42 @@
 class Monogenic
 {
 public:
-	//Next set of functions are addressed to generate data for the unitary tests
-	MultidimArray<double> createDataTest(size_t xdim, size_t ydim, size_t zdim, double wavelength,
-			double mean, double sigma);
+	// PROTEINRADIUSVOLUMEANDSHELLSTATISTICS: This function takes as input a "mask" and returns
+	// the radius and the volumen "vol" of the protein. The radius is defines has the distance
+	// from the center of the cube to the farthest point of the protein measured from the center.
+	// The volumen "vol" represent the number of voxels of the mask.
+	void proteinRadiusVolumeAndShellStatistics(MultidimArray<int> &mask, double &radius,
+			long &vol, MultidimArray<double> &radMap);
 
-	MultidimArray<int> createMask(MultidimArray<double> &vol, int radius);
 
-	void applyMask(MultidimArray<double> &vol, MultidimArray<int> &mask);
+	// FINDCLIFFVALUE: This function determines the radius of noise, "radiuslimit". It means given
+	// a map, "inputmap", the radius measured from the origen for which the map is masked with a
+	// spherical mask is detected. Outside of this sphere there is no noise. Once the "mask" is
+	// set to -1 for all voxels with radius greater than "radiuslimit". The parameter "rsmooth"
+	// does not affect to the output of this function, it is only used to provide information to
+	// the user when the "radiuslimit" is close to the boxsize. Note that the perimeter of the
+	// box is sometimes smoothed when a Fourier Transform is carried out. To prevent this
+	// situation this parameter is provided, but it is only informative via the standard output
+	void findCliffValue(MultidimArray<double> radMap, MultidimArray<double> &inputmap,
+			double &radius,	double &radiuslimit, MultidimArray<int> &mask, double &rsmooth);
 
-	MultidimArray< std::complex<double> > applyMaskFourier(MultidimArray< std::complex<double> > &vol, MultidimArray<double> &mask);
 
-	void addNoise(MultidimArray<double> &vol, double mean, double stddev);
-
-	//This function determines a multidimArray with the frequency values in Fourier space;
+	//FOURIERFREQS_3D: Determine the map of frequencies in the Fourier Space as an output.
+	// Also, the accesible frequencies along each direction are calculated, they are
+	// "freq_fourier_x", "freq_fourier_y", and "freq_fourier_z".
 	MultidimArray<double> fourierFreqs_3D(const MultidimArray< std::complex<double> > &myfftV,
 			const MultidimArray<double> &inputVol,
 			Matrix1D<double> &freq_fourier_x,
 			Matrix1D<double> &freq_fourier_y,
 			Matrix1D<double> &freq_fourier_z);
 
-	//This function determines a multidimArray with the frequency values in Fourier space;
-	MultidimArray<double> fourierFreqs_2D(const MultidimArray< std::complex<double> > &myfftImg,
-			const MultidimArray<double> &inputImg);
-
-	//It computes the monogenic amplitude of an input volume;
-	void monogenicAmplitude_3D(const MultidimArray<double> &inputVol, MultidimArray<double> &amplitude, int numberOfThreads);
-
-	double averageInMultidimArray(const MultidimArray<double> &vol, MultidimArray<int> &mask);
-
-	void statisticsInBinaryMask(const MultidimArray<double> &vol, MultidimArray<int> &mask, double &mean, double &sd);
-
-	void statisticsInBinaryMask(const MultidimArray<double> &volS, const MultidimArray<double> &volN,
-			MultidimArray<int> &mask, MultidimArray<int> &maskExcl, double &meanS, double &sdS,
-			double &meanN, double &sdN, double &significance, double &thr95, double &NS, double &NN);
-
-	void statisticsInOutBinaryMask(const MultidimArray<double> &volS,
-			MultidimArray<int> &mask, MultidimArray<int> &maskExcl, double &meanS, double &sdS,
-			double &meanN, double &sdN, double &significance, double &thr95, double &NS, double &NN);
-
-	void monogenicAmplitude_3D_Fourier(const MultidimArray< std::complex<double> > &myfftV,
-			MultidimArray<double> iu, MultidimArray<double> &amplitude, int numberOfThreads);
-
-	void setLocalResolutionMap(const MultidimArray<double> &amplitudeMS,
-			MultidimArray<int> &pMask, MultidimArray<double> &plocalResolutionMap,
-			double &thresholdNoise, double &resolution, double &resolution_2);
-
-	void setLocalResolutionMapAnfFilter(const MultidimArray<double> &amplitudeMS,
-			MultidimArray<int> &pMask, MultidimArray<double> &plocalResolutionMap,
-			MultidimArray<double> &filteredMap, MultidimArray<double> &resolutionFiltered,
-			double &thresholdNoise, double &resolution, double &resolution_2);
-
-	void resolution2evalDir(int &fourier_idx, double min_step, double sampling, int volsize,
-			double &resolution, double &last_resolution,
-			int &last_fourier_idx,
-			double &freq, double &freqL, double &freqH,
-			bool &continueIter, bool &breakIter, bool &doNextIteration);
-
+	//RESOLUTION2EVAL: Determines the resoltion to be analzed in the estimation
+	//of the local resolution. These resolution are freq, freqL (diginal units)
+	// being freqL the tail of the raise cosine centered at freq. The parameter
+	// resolution is the frequency freq in converted into Angstrom. The parameters
+	//minRes and maxRes, determines the limits of the resolution range to be
+	// analyzed (in Angstrom). Sampling is the sampling rate in A/px, and step,
+	// is the resolution step for which analyze the local resolution.
 	void resolution2eval(int &count_res, double step,
 			double &resolution, double &last_resolution,
 			double &freq, double &freqL,
@@ -109,24 +89,16 @@ public:
 			int &volsize,
 			bool &continueIter,	bool &breakIter,
 			double &sampling, double &minRes, double &maxRes,
-			bool &doNextIteration, bool &automaticMode);
+			bool &doNextIteration);
 
-	void proteinRadiusVolumeAndShellStatistics(MultidimArray<int> &mask, double &radius,
-			int &vol, MultidimArray<double> &radMap);
-	void findCliffValue(MultidimArray<double> radMap, MultidimArray<double> &inputmap,
-			double &radius,	double &radiuslimit, MultidimArray<int> &mask);
-
-	bool TestmonogenicAmplitude_3D_Fourier();
-
-	void amplitudeMonoSigDir3D_LPF(const MultidimArray< std::complex<double> > &myfftV,
-			FourierTransformer &transformer_inv,
-			MultidimArray< std::complex<double> > &fftVRiesz,
-			MultidimArray< std::complex<double> > &fftVRiesz_aux, MultidimArray<double> &VRiesz,
-			double freq, double freqH, double freqL, MultidimArray<double> &iu,
-			Matrix1D<double> &freq_fourier_x, Matrix1D<double> &freq_fourier_y,
-			Matrix1D<double> &freq_fourier_z, MultidimArray<double> &amplitude,
-			int count, int dir, FileName fnDebug, int N_smoothing);
-
+	// AMPLITUDEMONOSIG3D_LPF: Estimates the monogenic amplitude of a HPF map, myfftV is the
+	// Fourier transform of that map. The monogenic amplitude is "amplitude", and the
+	// parameters "fftVRiesz", "fftVRiesz_aux", "VRiesz", are auxiliar variables that will
+	// be defined inside the function (they are input to speed up monores algorithm).
+	// Freq, freqL and freqH, are the frequency of the HPF and the tails of a raise cosine.
+	// Note that once the monogenic amplitude is estimated, it is low pass filtered to obtain
+	// a smooth version and avoid rippling. freq_fourier_x, freq_fourier_y, freq_fourier_z,
+	// are the accesible Fourier frequencies along each axis.
 	void amplitudeMonoSig3D_LPF(const MultidimArray< std::complex<double> > &myfftV,
 			FourierTransformer &transformer_inv,
 			MultidimArray< std::complex<double> > &fftVRiesz,
@@ -136,42 +108,64 @@ public:
 			Matrix1D<double> &freq_fourier_z, MultidimArray<double> &amplitude,
 			int count, FileName fnDebug);
 
-	//Fast method: It computes the monogenic amplitude of an input volume;
-	void monogenicAmplitude_3D(FourierTransformer &transformer, MultidimArray<double> &iu,
-			Matrix1D<double> &freq_fourier_z, Matrix1D<double> &freq_fourier_y, Matrix1D<double> &freq_fourier_x,
-			MultidimArray< std::complex<double> > &fftVRiesz, MultidimArray< std::complex<double> > &fftVRiesz_aux,
-			MultidimArray<double> &VRiesz, const MultidimArray<double> &inputVol,
-			MultidimArray< std::complex<double> > &myfftV, MultidimArray<double> &amplitude);
+	// STATISTICSINBINARYMASK2: Estimates the staticstics of two maps:
+	// Signal map "volS" and Noise map "volN". The signal statistics
+	// are obtained by mean of a binary mask. The results are the mean
+	// and variance of noise and signal, as well as the number of voxels
+	// of signal and noise NS and NN respectively. The thr95 represents
+	// the percentile 95 of noise distribution.
+	void statisticsInBinaryMask2(const MultidimArray<double> &volS,
+			const MultidimArray<double> &volN,
+			MultidimArray<int> &mask, double &meanS, double &sdS2,
+			double &meanN, double &sdN2, double &significance, double &thr95, double &NS, double &NN);
 
-	//It computes the monogenic amplitude of an input image;
-	void monogenicAmplitude_2D(const MultidimArray<double> &inputVol, MultidimArray<double> &amplitude, int numberOfThreads);
+	// STATISTICSINOUTBINARYMASK2: Estimates the staticstics of a single
+	// map. The signal statistics are obtained by mean of a binary mask.
+	// The results are the mean and variance of noise and signal, as well
+	// as the number of voxels of signal and noise NS and NN respectively.
+	// The thr95 represents the percentile 95 of noise distribution.
+	void statisticsInOutBinaryMask2(const MultidimArray<double> &volS,
+			MultidimArray<int> &mask, double &meanS, double &sdS2,
+			double &meanN, double &sdN2, double &significance, double &thr95, double &NS, double &NN);
 
-	//Fast method: It computes the monogenic amplitude of an input image;
-	void monogenicAmplitude_2D(FourierTransformer &transformer, MultidimArray<double> &iu,
-			Matrix1D<double> &freq_fourier_y, Matrix1D<double> &freq_fourier_x,
-			MultidimArray< std::complex<double> > &fftVRiesz, MultidimArray< std::complex<double> > &fftVRiesz_aux,
-			MultidimArray<double> &VRiesz, const MultidimArray<double> &inputVol,
-			MultidimArray< std::complex<double> > &myfftV, MultidimArray<double> &amplitude);
+	// SETLOCALRESOLUTIONHALFMAPS: Set the local resolution of a voxel, by
+	// determining if the monogenic amplitude "amplitudeMS" is higher than
+	// the threshold of noise "thresholdNoise". Thus the local resolution
+	// map "plocalResolution" is set, with the resolution value "resolution"
+	// or with "resolution_2". "resolution" is the resolution for with
+	// the hypohtesis test is carried out, and "resolution_2" is the resolution
+	// of the analisys two loops ago (see monores method)
+	void setLocalResolutionHalfMaps(const MultidimArray<double> &amplitudeMS,
+			MultidimArray<int> &pMask, MultidimArray<double> &plocalResolutionMap,
+			double &thresholdNoise, double &resolution, double &resolution_2);
 
-	//It computes the monogenic amplitud of a HPF image
-//	void monogenicAmplitude_2DHPF(FourierTransformer &transformer, MultidimArray<double> &iu,
-//			double freqH, double freq,
-//			Matrix1D<double> &freq_fourier_y, Matrix1D<double> &freq_fourier_x,
-//			MultidimArray< std::complex<double> > &fftVRiesz,
-//			MultidimArray< std::complex<double> > &fftVRiesz_aux,
-//			MultidimArray<double> &VRiesz,
-//			const MultidimArray<double> &inputImg,
-//			MultidimArray< std::complex<double> > &myfftImg,
-//			MultidimArray<double> &amplitude);
-	void monogenicAmplitude_2DHPF(FourierTransformer &transformer, MultidimArray<double> &iu,
-			double freqH, double freq, double freqL,
-			Matrix1D<double> &freq_fourier_y, Matrix1D<double> &freq_fourier_x,
-			MultidimArray< std::complex<double> > &fftVRiesz,
-			MultidimArray< std::complex<double> > &fftVRiesz_aux,
-			MultidimArray<double> &VRiesz,
-			const MultidimArray<double> &inputImg,
-			MultidimArray< std::complex<double> > &myfftImg,
-			MultidimArray<double> &amplitude, int count, FileName fnDebug);
+	// SETLOCALRESOLUTIONMAP: Set the local resolution of a voxel, by
+	// determining if the monogenic amplitude "amplitudeMS" is higher than
+	// the threshold of noise "thresholdNoise". Thus the local resolution
+	// map "plocalResolution" is set, with the resolution value "resolution"
+	// or with "resolution_2". "resolution" is the resolution for with
+	// the hypohtesis test is carried out, and "resolution_2" is the resolution
+	// of the analisys two loops ago (see monores method)
+	void setLocalResolutionMap(const MultidimArray<double> &amplitudeMS,
+		MultidimArray<int> &pMask, MultidimArray<double> &plocalResolutionMap,
+		double &thresholdNoise, double &resolution, double &resolution_2);
+
+	// MONOGENICAMPLITUDE_3D_FOURIER: Given the fourier transform of a map
+	// "myfftV", this function computes the monogenic amplitude "amplitude" 
+	// iu is the inverse of the frequency in Fourier space.
+	void monogenicAmplitude_3D_Fourier(const MultidimArray< std::complex<double> > &myfftV,
+			MultidimArray<double> iu, MultidimArray<double> &amplitude, int numberOfThreads);
+
+	//ADDNOISE: This function add gaussian with mean = double mean and standard deviation
+	// equal to  double stddev to a map given by "vol"
+	void addNoise(MultidimArray<double> &vol, double mean, double stddev);
+
+	//CREATEDATATEST: This function generates fringe pattern (rings) map returned 
+	// as a multidimArray, with  dimensions given by xdim, ydim and zdim. The 
+	// wavelength of the pattern is given by double wavelength
+	MultidimArray<double> createDataTest(size_t xdim, size_t ydim, size_t zdim,
+		double wavelength, double mean, double sigma);
+
 };
 
 //@}
