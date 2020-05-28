@@ -1400,7 +1400,7 @@ public:
     	if (ang_con == -1)
 	{
 	    doCrossValidation = true;
-	    std::cout << "The best cone angle will be estimated" << std::end;
+	    std::cout << "The best cone angle will be estimated" << std::endl;
 	}
 	else
 	{
