@@ -1300,7 +1300,6 @@ public:
     	w.initZeros(Nrot, Ntilt);
     	wt = w;
     	double cosAngle = cos(ang_con);
-    	std::cout << "ang_con" << ang_con << std::endl;
     	double aux = 4.0/((cosAngle -1)*(cosAngle -1));
     	// Directional resolution is store in a metadata
     	for (double i=0; i<Nrot; i++)
@@ -1398,12 +1397,16 @@ public:
 
     void run()
     {
-
-    	std::cout << "ang_con" << ang_con << std::endl;
     	if (ang_con == -1)
-			doCrossValidation = true;
-		else
-			doCrossValidation = false;
+	{
+	    doCrossValidation = true;
+	    std::cout << "The best cone angle will be estimated" << std::end;
+	}
+	else
+	{
+	    doCrossValidation = false;
+	    std::cout << "cone angle" << ang_con << std::endl;
+	}
 //    	tuningAngularDistribution();
 
     	MultidimArray<double> half1, half2;
