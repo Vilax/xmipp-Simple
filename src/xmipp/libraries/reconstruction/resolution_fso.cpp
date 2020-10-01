@@ -1817,7 +1817,7 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 //     	transformer1.inverseFourierTransform(FThalf1, filteredMap);
 //     }
 
-opt/scipion3_test/xmipp-bundle/build
+
     void ProgFSO::directionalFilter(MultidimArray<std::complex<double>> &FThalf1, 
 			MultidimArray<double> &threeDfsc, 
 			MultidimArray<double> &filteredMap, int m1sizeX, int m1sizeY, int m1sizeZ)
