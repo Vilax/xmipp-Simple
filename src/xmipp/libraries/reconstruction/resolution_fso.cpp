@@ -109,8 +109,8 @@ void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myf
 	double u;
 
 	freq_fourier_z.initZeros(ZSIZE(myfftV));
-	freq_fourier_x = freq_fourier_z;
-	freq_fourier_y = freq_fourier_z;
+	freq_fourier_x.initZeros(XSIZE(myfftV));
+	freq_fourier_y.initZeros(YSIZE(myfftV));
 
 	VEC_ELEM(freq_fourier_z,0) = 1e-38;
 	for(size_t k=1; k<ZSIZE(myfftV); ++k){
@@ -147,19 +147,20 @@ void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myf
 	MultidimArray<double> sphere;
 	sphere.resizeNoCopy(freqMap);
 
+	//TODO: check in the for enter in the if conditions
 
 	for(size_t k=0; k<ZSIZE(myfftV); ++k)
 	{
-		FFT_IDX2DIGFREQ(k, zvoldim, uz);
+		uz = VEC_ELEM(freq_fourier_z,k);
 		uz2 = uz*uz;
 		for(size_t i=0; i<YSIZE(myfftV); ++i)
 		{
-			FFT_IDX2DIGFREQ(i,yvoldim, uy);
+			uy = VEC_ELEM(freq_fourier_y, i);
 			uz2y2 = uz2 + uy*uy;
 
 			for(size_t j=0; j<XSIZE(myfftV); ++j)
 			{
-				FFT_IDX2DIGFREQ(j, xvoldim, ux);
+				ux = VEC_ELEM(freq_fourier_x, j);
 				ux = sqrt(uz2y2 + ux*ux);
 
 				if	(ux<=0.5)
@@ -205,86 +206,6 @@ void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myf
 	createFullFourier(sphere, fn, xvoldim, yvoldim, zvoldim);
 }
 
-/*
-void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myfftV,
-    		const MultidimArray<double> &inputVol)
-    {
-    	double u;
-
-    	freq_fourier_z.initZeros(ZSIZE(myfftV));
-    	freq_fourier_x.initZeros(XSIZE(myfftV));
-    	freq_fourier_y.initZeros(YSIZE(myfftV));
-
-    	VEC_ELEM(freq_fourier_z,0) = 1e-38;
-    	for(size_t k=1; k<ZSIZE(myfftV); ++k){
-    		FFT_IDX2DIGFREQ(k,ZSIZE(inputVol), u);
-    		VEC_ELEM(freq_fourier_z,k) = u;
-    	}
-
-    	VEC_ELEM(freq_fourier_y,0) = 1e-38;
-    	for(size_t k=1; k<YSIZE(myfftV); ++k){
-    		FFT_IDX2DIGFREQ(k,YSIZE(inputVol), u);
-    		VEC_ELEM(freq_fourier_y,k) = u;
-    	}
-
-    	VEC_ELEM(freq_fourier_x,0) = 1e-38;
-    	for(size_t k=1; k<XSIZE(myfftV); ++k){
-    		FFT_IDX2DIGFREQ(k,XSIZE(inputVol), u);
-    		VEC_ELEM(freq_fourier_x,k) = u;
-    	}
-
-
-    	MultidimArray<double> iu, iux, iuy, iuz;
-
-    	iu.initZeros(myfftV);
-    	iux = iu;
-    	iuy = iu;
-    	iuz = iu;
-
-    	double uz, uy, ux, uz2, u2, uz2y2;
-    	long n=0;
-    	//  TODO: reasign uz = uz*uz to save memory
-    	//  TODO: Take ZSIZE(myfftV) out of the loop
-    	//	TODO: Use freq_fourier_x instead of calling FFT_IDX2DIGFREQ
-
-    	for(size_t k=0; k<ZSIZE(myfftV); ++k)
-    	{
-    		FFT_IDX2DIGFREQ(k,ZSIZE(inputVol),uz);
-    		uz2 = uz*uz;
-    		for(size_t i=0; i<YSIZE(myfftV); ++i)
-    		{
-    			FFT_IDX2DIGFREQ(i,YSIZE(inputVol),uy);
-    			uz2y2 = uz2 + uy*uy;
-
-    			for(size_t j=0; j<XSIZE(myfftV); ++j)
-    			{
-    				FFT_IDX2DIGFREQ(j,XSIZE(inputVol), ux);
-    				u2 = uz2y2 + ux*ux;
-//   					DIRECT_MULTIDIM_ELEM(iu,n) = sqrt(u2);
-    				DIRECT_MULTIDIM_ELEM(iux,n) = j;
-    				DIRECT_MULTIDIM_ELEM(iuy,n) = i;
-    				DIRECT_MULTIDIM_ELEM(iuz,n) = k;
-   					if ((k != 0) || (i != 0) || (j != 0))
-   					{
-   						DIRECT_MULTIDIM_ELEM(iu,n) = 1/sqrt(u2);
-   					}
-   					else
-   					{
-   						DIRECT_MULTIDIM_ELEM(iu,n) = 1e38;
-   					}
-   					if ((j == 0) && (uy<0))
-   						DIRECT_MULTIDIM_ELEM(iu,n) = 1.9;
-   					if ((i == 0) && (j == 0) && (uz<0))
-   					   	DIRECT_MULTIDIM_ELEM(iu,n) = 1.9;
-   					++n;
-    			}
-    		}
-    	}
-
-    	freqMap = iu;
-    }
-
-	*/
 
 void ProgFSO::fscDir(MultidimArray< std::complex< double > > & FT1,
 				MultidimArray< std::complex< double > > & FT2,
@@ -469,15 +390,13 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 
 					DIRECT_MULTIDIM_ELEM(arr2indx, idx_count) = n - 1;
 
+					//TODO: use 1/u
 					double u = sqrt(ux*ux + uy*uy + uz*uz);
 
 					DIRECT_MULTIDIM_ELEM(fx, idx_count) = ux/u;
 					DIRECT_MULTIDIM_ELEM(fy, idx_count) = uy/u;
 					DIRECT_MULTIDIM_ELEM(fz, idx_count) = uz/u;
 
-					// DIRECT_MULTIDIM_ELEM(idx_x, idx_count) = j;
-					// DIRECT_MULTIDIM_ELEM(idx_y, idx_count) = i;
-					// DIRECT_MULTIDIM_ELEM(idx_z, idx_count) = k;
 
 					DIRECT_MULTIDIM_ELEM(freqidx, idx_count) = idx;
 
@@ -497,7 +416,6 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 			}
 		}
 		
-		std::cout << "antes" << std::endl;
 		// The global FSC is stored as a metadata
 		size_t id;
 		MetaData mdRes;
@@ -582,10 +500,6 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 	// Computing directional resolution
 	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT1_vec)
 	{
-		// double ux = VEC_ELEM(freq_fourier_x, DIRECT_MULTIDIM_ELEM(idx_x, n));
-		// double uy = VEC_ELEM(freq_fourier_y, DIRECT_MULTIDIM_ELEM(idx_y, n));
-		// double uz = VEC_ELEM(freq_fourier_z, DIRECT_MULTIDIM_ELEM(idx_z, n));
-
 		// TODO: Remove unuseful vectors
 		// double cosine = fabs((x_dir*ux + y_dir*uy + z_dir*uz)/sqrt(ux*ux + uy*uy + uz*uz));
 		double ux = DIRECT_MULTIDIM_ELEM(fx, n);
@@ -619,7 +533,6 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 			dAi(num, idxf) += real(conj(z1) * z2  * cosine);
 			dAi(den1,idxf) += absz1*absz1;
 			dAi(den2,idxf) += absz2*absz2;
-			
 		}
 	}
 
@@ -648,7 +561,7 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 	}
 
 
-
+	//TODO: join with previous loop
 	FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
 	{
 		if ( (dAi(fsc,i)<=thrs) && (i>2) )
@@ -678,42 +591,8 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 		DIRECT_MULTIDIM_ELEM(threeD_FSC, n) += w*DIRECT_MULTIDIM_ELEM(fsc, ind);
 		DIRECT_MULTIDIM_ELEM(normalizationMap, n) += w;
 	}
-
-
-	// size_t sizevec = vecidx.size();
-	// for (size_t kk = 0; kk< sizevec; ++kk)
-	// {
-	// 	long n = vecidx[kk];
-		
-	// 	size_t j = DIRECT_MULTIDIM_ELEM(idx_x, n);
-	// 	size_t i = DIRECT_MULTIDIM_ELEM(idx_y, n);
-	// 	size_t k = DIRECT_MULTIDIM_ELEM(idx_z, n);
-
-	// 	size_t ind = DIRECT_MULTIDIM_ELEM(freqidx, n);
-	// 	double w = weightFSC3D[k];
-
-	// 	dAkij(threeD_FSC, k, i, j) += w*DIRECT_MULTIDIM_ELEM(frc, ind);
-	// 	dAkij(normalizationMap, k, i, j) += DIRECT_MULTIDIM_ELEM(counterMap, ind);
-	// 	dAkij(normalizationMap, k, i, j) += DIRECT_MULTIDIM_ELEM(counterMap, ind);
-	// }
 }
 
-// void ProgFSO::interpolation3DFSC(MultidimArray<double> &3dfsc)
-// {
-
-
-// 	size_t sizevec = vecidx.size();
-// 	for (size_t kk = 0; kk< sizevec; ++kk)
-// 	{
-// 		long n = vecidx[kk];
-
-// 		size_t ind = DIRECT_MULTIDIM_ELEM(freqidx, n);
-// 		double w = weightFSC3D[k];
-
-// 		dAkij(threeD_FSC, idx_3dfsc) += w*DIRECT_MULTIDIM_ELEM(frc, ind);
-// 		dAkij(normalizationMap, idx_3dfsc) += DIRECT_MULTIDIM_ELEM(counterMap, ind);
-// 	}
-// }
 
 void ProgFSO::fscGlobal(double sampling_rate,
 				MultidimArray< double >& freq,
@@ -1830,18 +1709,16 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 		half2 = imgHalf2();
 
         FourierTransformer transformer1(FFTW_BACKWARD);
-        transformer1.FourierTransform(half1, FThalf1, false);
+        transformer1.FourierTransform(half1, FThalf1);//, false);
 		FourierTransformer transformer2(FFTW_BACKWARD);
 		MultidimArray<std::complex<double>> FThalf2;
 		FThalf2.resizeNoCopy(FThalf1);
         transformer1.FourierTransform(half2, FThalf2, false);
-
     	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(threeDfsc)
         {
     		DIRECT_MULTIDIM_ELEM(FThalf1, n) += DIRECT_MULTIDIM_ELEM(FThalf2, n);
 			DIRECT_MULTIDIM_ELEM(FThalf1, n) *= DIRECT_MULTIDIM_ELEM(threeDfsc, n);
     	}
-
     	filteredMap.resizeNoCopy(m1sizeX, m1sizeY, m1sizeZ);
     	transformer1.inverseFourierTransform(FThalf1, filteredMap);
     }
@@ -1873,6 +1750,31 @@ void ProgFSO::directionalFilter_reading(MultidimArray<std::complex<double>> &FTh
     	filteredMap.resizeNoCopy(m1sizeX, m1sizeY, m1sizeZ);
     	transformer1.inverseFourierTransform(FThalf1, filteredMap);
     }
+
+/*
+void ProgFSO::directionalFilter_fast(MultidimArray<std::complex<double>> &FThalf1, 
+			MultidimArray<std::complex<double>> &FThalf2, MultidimArray<double> &threeDfsc, 
+			MultidimArray<double> &filteredMap, int m1sizeX, int m1sizeY, int m1sizeZ)
+    {
+        FourierTransformer transformer1(FFTW_BACKWARD);
+
+		
+
+    	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FThalf1)
+        {
+			std::complex<double> &z1 = DIRECT_MULTIDIM_ELEM(FThalf1, n);
+    		z1 += DIRECT_MULTIDIM_ELEM(FThalf2, n);
+			z1 *= DIRECT_MULTIDIM_ELEM(threeDfsc, n);
+
+			size_t idx = DIRECT_MULTIDIM_ELEM(arr2indx, n);
+
+			DIRECT_MULTIDIM_ELEM(FThalf1, idx) = z1;
+    	}
+
+    	filteredMap.resizeNoCopy(m1sizeX, m1sizeY, m1sizeZ);
+    	transformer1.inverseFourierTransform(FThalf1, filteredMap);
+    }
+*/
 
     void ProgFSO::resolutionDistribution(MultidimArray<double> &resDirFSC, FileName &fn)
     {
@@ -2021,7 +1923,7 @@ void ProgFSO::directionalFilter_reading(MultidimArray<std::complex<double>> &FTh
 		std::cout << "Resolution FSC at 0.143 = " << resol << " " << resInterp << std::endl;
 		std::cout << " " << std::endl;
 
-
+		FT2.clear();
 		// Determining best cone Angle
 		// bestAngleFunction();
 
@@ -2074,8 +1976,6 @@ void ProgFSO::directionalFilter_reading(MultidimArray<std::complex<double>> &FTh
     	std::cout << "   " <<  std::endl;
     	std::cout << "Preparing results ..." <<  std::endl;
 
-		//TODO: In general, clean memory
-
     	// ANISOTROPY CURVE
     	aniParam /= (double) angles.mdimx;
     	MetaData mdani;
@@ -2095,36 +1995,36 @@ void ProgFSO::directionalFilter_reading(MultidimArray<std::complex<double>> &FTh
 				size_t idx = DIRECT_MULTIDIM_ELEM(arr2indx, n);
 				DIRECT_MULTIDIM_ELEM(d3_FSCMap, idx) = value;
 		}
-
+		// std::cout << "llego1"<< std::endl;
+		// MultidimArray<double> filteredMap;
+        // filteredMap.resizeNoCopy(xvoldim, yvoldim, zvoldim);
+    	// transformer1.inverseFourierTransform(FT1, filteredMap);
+		// CenterFFT(filteredMap, false);
 
 		// This code fix the empty line line in Fourier space
+		//TODO enhance performance
 		size_t auxVal;
 		auxVal = YSIZE(d3_FSCMap)/2;
-    	long n=0;
-    	for(size_t k=0; k<ZSIZE(d3_FSCMap); ++k)
-    	{
-    		for(size_t i=0; i<YSIZE(d3_FSCMap); ++i)
-    		{
-    			for(size_t j=0; j<XSIZE(d3_FSCMap); ++j)
-    			{
-    				if ((j == 0) && (i>auxVal))
-    					{
-    					DIRECT_A3D_ELEM(d3_FSCMap,k,i,j) = DIRECT_A3D_ELEM(d3_FSCMap,k,i,j+1);
-    					}
-   					++n;
-    			}
-    		}
-    	}
-
+    	
+		size_t j = 0;
+		for(size_t i=0; i<YSIZE(d3_FSCMap); ++i)
+		{
+			if (i>auxVal)
+			{
+				for(size_t k=0; k<ZSIZE(d3_FSCMap); ++k)
+				{
+						DIRECT_A3D_ELEM(d3_FSCMap,k,i,j) = DIRECT_A3D_ELEM(d3_FSCMap,k,i,j+1);
+				}
+			}
+		}
+				
 		//TODO: directionalFilter reads the original map, avoid that
 		// DIRECTIONAL FILTERED MAP
 		MultidimArray<double> filteredMap;
 		directionalFilter(FT1, d3_FSCMap, filteredMap, xvoldim, yvoldim, zvoldim);
-
 		Image<double> saveImg2;
 		saveImg2() = filteredMap;
 		saveImg2.write(fn_fscmd_folder+"filteredMap.mrc");
-
 		//FULL 3DFSC MAP
 		FileName fn;
 		createFullFourier(d3_FSCMap, fn_3dfsc, xvoldim, yvoldim, zvoldim);
