@@ -26,6 +26,9 @@
  ***************************************************************************/
 
 #include "resolution_fso.h"
+#include <chrono> 
+
+//#define SAVE_DIR_FSC
 
 void ProgFSO::defineParams()
 {
@@ -390,12 +393,9 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 
 					DIRECT_MULTIDIM_ELEM(arr2indx, idx_count) = n - 1;
 
-					//TODO: use 1/u
-					double u = sqrt(ux*ux + uy*uy + uz*uz);
-
-					DIRECT_MULTIDIM_ELEM(fx, idx_count) = ux/u;
-					DIRECT_MULTIDIM_ELEM(fy, idx_count) = uy/u;
-					DIRECT_MULTIDIM_ELEM(fz, idx_count) = uz/u;
+					DIRECT_MULTIDIM_ELEM(fx, idx_count) = ux*iun;
+					DIRECT_MULTIDIM_ELEM(fy, idx_count) = uy*iun;
+					DIRECT_MULTIDIM_ELEM(fz, idx_count) = uz*iun;
 
 
 					DIRECT_MULTIDIM_ELEM(freqidx, idx_count) = idx;
@@ -465,7 +465,7 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 
 void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 				MetaData &mdRes, MultidimArray<double> &threeD_FSC, MultidimArray<double> &normalizationMap,
-				double &fscFreq, double &thrs, double &resol)
+				double &fscFreq, double &thrs, double &resol, size_t dirnumber)
 {
 	size_t dim = NZYXSIZE(freqElems);
 	//MultidimArray<long> pos;
@@ -483,9 +483,9 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 
 	//Parameter to determine the cone
 	double x_dir, y_dir, z_dir, cosAngle, aux;
-	x_dir = sin(tilt*PI/180)*cos(rot*PI/180);
-	y_dir = sin(tilt*PI/180)*sin(rot*PI/180);
-	z_dir = cos(tilt*PI/180);
+	x_dir = sin(tilt)*cos(rot);
+	y_dir = sin(tilt)*sin(rot);
+	z_dir = cos(tilt);
 
 	cosAngle = cos(ang_con);
 
@@ -522,15 +522,15 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 			cosine = exp( -((cosine -1)*(cosine -1))*aux); 
 			//wt += cosine;
 
-			double absz1 = abs(z1*cosine);
-			double absz2 = abs(z2*cosine);
+			double absz1 = abs(z1)*cosine;
+			double absz2 = abs(z2)*cosine;
 
 			vecidx.push_back(n);
 			cosine *= cosine;
 			weightFSC3D.push_back(cosine);
 
 			size_t idxf = DIRECT_MULTIDIM_ELEM(freqidx, n);
-			dAi(num, idxf) += real(conj(z1) * z2  * cosine);
+			dAi(num, idxf) += real(conj(z1) * z2)  * cosine;
 			dAi(den1,idxf) += absz1*absz1;
 			dAi(den2,idxf) += absz2*absz2;
 		}
@@ -542,6 +542,11 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 	fsc.resizeNoCopy(freq);
 	fsc.initConstant(1.0);
 
+
+	//The fsc is stored in a metadata and saved
+	#ifdef SAVE_DIR_FSC
+	FileName fnmd;
+	
 	size_t id;
 	FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
 	{
@@ -559,7 +564,9 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 			mdRes.setValue(MDL_RESOLUTION_FREQREAL, 1./dAi(freq, i), id);
 		}
 	}
-
+	fnmd = fn_fscmd_folder + formatString("fscDirection_%i.xmd", dirnumber);
+	mdRes.write(fnmd);
+	#endif
 
 	//TODO: join with previous loop
 	FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
@@ -1483,6 +1490,8 @@ void ProgFSO::generateDirections(Matrix2D<double> &angles, bool alot)
 	MAT_ELEM(angles, 0, 80) = 27.132791;	 MAT_ELEM(angles, 1, 80) = -75.219088;
 	}
 
+	angles *= PI/180;
+
 }
 
 void ProgFSO::interpolationCoarse(MultidimArray< double > fsc,
@@ -1665,38 +1674,6 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 	mdAnisotropy.write(fnmd);
 }
 
-
-
-//     void ProgFSO::directionalFilter(MultidimArray<std::complex<double>> &FThalf1,
-//     		MultidimArray<double> &threeDfsc, MultidimArray<double> &filteredMap, int m1sizeX, int m1sizeY, int m1sizeZ)
-//     {
-
-//     	Image<double> imgHalf1;
-//     	imgHalf1.read(fnhalf1);
-//     	MultidimArray<double> half1;
-//     	half1 = imgHalf1();
-
-//         FourierTransformer transformer1(FFTW_BACKWARD);
-//         transformer1.FourierTransform(half1, FThalf1, false);
-
-// //    	FourierTransformer transformer;
-// //    	MultidimArray< std::complex<double> > FT;
-// //    	FT.initZeros(threeDfsc);
-// //    	transformer.FourierTransform(half1, FT);
-
-//     	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(threeDfsc)
-//         {
-// //    		if (std::isnan(DIRECT_MULTIDIM_ELEM(threeDfsc, n)) == 1)
-//     		DIRECT_MULTIDIM_ELEM(FThalf1, n) *= DIRECT_MULTIDIM_ELEM(threeDfsc, n);
-//     	}
-
-
-// //    	filteredMap.resizeNoCopy(half1);
-//     	filteredMap.resizeNoCopy(m1sizeX, m1sizeY, m1sizeZ);
-//     	transformer1.inverseFourierTransform(FThalf1, filteredMap);
-//     }
-
-
     void ProgFSO::directionalFilter(MultidimArray<std::complex<double>> &FThalf1, 
 			MultidimArray<double> &threeDfsc, 
 			MultidimArray<double> &filteredMap, int m1sizeX, int m1sizeY, int m1sizeZ)
@@ -1723,58 +1700,6 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
     	transformer1.inverseFourierTransform(FThalf1, filteredMap);
     }
 
-void ProgFSO::directionalFilter_reading(MultidimArray<std::complex<double>> &FThalf1, 
-			MultidimArray<double> &threeDfsc, 
-			MultidimArray<double> &filteredMap, int m1sizeX, int m1sizeY, int m1sizeZ)
-    {
-    	Image<double> imgHalf1, imgHalf2;
-    	imgHalf1.read(fnhalf1);
-		imgHalf2.read(fnhalf2);
-    	MultidimArray<double> half1, half2;
-    	half1 = imgHalf1();
-		half2 = imgHalf2();
-
-        FourierTransformer transformer1(FFTW_BACKWARD);
-        transformer1.FourierTransform(half1, FThalf1, false);
-		FourierTransformer transformer2(FFTW_BACKWARD);
-		MultidimArray<std::complex<double>> FThalf2;
-		FThalf2.resizeNoCopy(FThalf1);
-        transformer1.FourierTransform(half2, FThalf2, false);
-
-    	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(threeDfsc)
-        {
-    		DIRECT_MULTIDIM_ELEM(FThalf1, n) += DIRECT_MULTIDIM_ELEM(FThalf2, n);
-			DIRECT_MULTIDIM_ELEM(FThalf1, n) *= DIRECT_MULTIDIM_ELEM(threeDfsc, n);
-    	}
-
-    	filteredMap.resizeNoCopy(m1sizeX, m1sizeY, m1sizeZ);
-    	transformer1.inverseFourierTransform(FThalf1, filteredMap);
-    }
-
-/*
-void ProgFSO::directionalFilter_fast(MultidimArray<std::complex<double>> &FThalf1, 
-			MultidimArray<std::complex<double>> &FThalf2, MultidimArray<double> &threeDfsc, 
-			MultidimArray<double> &filteredMap, int m1sizeX, int m1sizeY, int m1sizeZ)
-    {
-        FourierTransformer transformer1(FFTW_BACKWARD);
-
-		
-
-    	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FThalf1)
-        {
-			std::complex<double> &z1 = DIRECT_MULTIDIM_ELEM(FThalf1, n);
-    		z1 += DIRECT_MULTIDIM_ELEM(FThalf2, n);
-			z1 *= DIRECT_MULTIDIM_ELEM(threeDfsc, n);
-
-			size_t idx = DIRECT_MULTIDIM_ELEM(arr2indx, n);
-
-			DIRECT_MULTIDIM_ELEM(FThalf1, idx) = z1;
-    	}
-
-    	filteredMap.resizeNoCopy(m1sizeX, m1sizeY, m1sizeZ);
-    	transformer1.inverseFourierTransform(FThalf1, filteredMap);
-    }
-*/
 
     void ProgFSO::resolutionDistribution(MultidimArray<double> &resDirFSC, FileName &fn)
     {
@@ -1787,34 +1712,37 @@ void ProgFSO::directionalFilter_fast(MultidimArray<std::complex<double>> &FThalf
     	Matrix2D<double> w, wt;
     	w.initZeros(Nrot, Ntilt);
     	wt = w;
-    	double cosAngle = cos(ang_con);
-    	double aux = 4.0/((cosAngle -1)*(cosAngle -1));
+    	float cosAngle = cosf(ang_con);
+    	float aux = 4.0/((cosAngle -1)*(cosAngle -1));
     	// Directional resolution is store in a metadata
-    	for (double i=0; i<Nrot; i++)
-		{
-			for (double j=0; j<Ntilt; j++)
-			{
-				double rotmatrix =  i*PI/180;
-				double tiltmatrix = j*PI/180;
-				double xx = sin(tiltmatrix)*cos(rotmatrix);
-				double yy = sin(tiltmatrix)*sin(rotmatrix);
-				double zz = cos(tiltmatrix);
 
-				double w = 0;
-				double wt = 0;
+			
+		for (int i=0; i<Nrot; i++)
+		{
+			double rotmatrix =  i*PI/180;
+
+			for (int j=0; j<Ntilt; j++)
+			{
+				float tiltmatrix = j*PI/180;
+				float xx = sinf(tiltmatrix)*cosf(rotmatrix);
+				float yy = sinf(tiltmatrix)*sinf(rotmatrix);
+				float zz = cosf(tiltmatrix);
+
+				float w = 0;
+				float wt = 0;
+
 				for (size_t k = 0; k<angles.mdimx; k++)
 				{
+
 					double rot = MAT_ELEM(angles, 0, k);
 					double tilt = MAT_ELEM(angles, 1, k);
-
-					rot *= PI/180;
-					tilt *= PI/180;
 
 					double x_dir = sin(tilt)*cos(rot);
 					double y_dir = sin(tilt)*sin(rot);
 					double z_dir = cos(tilt);
 
-					double cosine = fabs(x_dir*xx + y_dir*yy + z_dir*zz);
+
+					float cosine = fabs(x_dir*xx + y_dir*yy + z_dir*zz);
 					if (cosine>=cosAngle)
 					{
 						cosine = exp( -((cosine -1)*(cosine -1))*aux );
@@ -1823,13 +1751,14 @@ void ProgFSO::directionalFilter_fast(MultidimArray<std::complex<double>> &FThalf
 					}
 				}
 
-	    	double wRes = w/wt;
+			double wRes = w/wt;
 			objIdOut = mdOut.addObject();
-			mdOut.setValue(MDL_ANGLE_ROT, i, objIdOut);
-			mdOut.setValue(MDL_ANGLE_TILT, j, objIdOut);
+			mdOut.setValue(MDL_ANGLE_ROT, (double) i, objIdOut);
+			mdOut.setValue(MDL_ANGLE_TILT, (double) j, objIdOut);
 			mdOut.setValue(MDL_RESOLUTION_FRC, wRes, objIdOut);
 			}
 		}
+
 		mdOut.write(fn);
     }
 
@@ -1947,7 +1876,7 @@ void ProgFSO::directionalFilter_fast(MultidimArray<std::complex<double>> &FThalf
 		normalizationMap.resizeNoCopy(FT1_vec);
 		normalizationMap.initZeros();
 		
-		FileName fnmd;
+		
 		thrs = 0.143;
 
     	for (size_t k = 0; k<angles.mdimx; k++)
@@ -1958,13 +1887,11 @@ void ProgFSO::directionalFilter_fast(MultidimArray<std::complex<double>> &FThalf
 
 			// Estimating the direction FSC along the diretion given by rot and tilt
 			MetaData mdDirFSC;
-			fscDir_fast(fsc, rot, tilt, mdDirFSC, threeD_FSC, normalizationMap, resol, thrs, resInterp);
+			fscDir_fast(fsc, rot, tilt, mdDirFSC, threeD_FSC, normalizationMap, resol, thrs, resInterp, k);
 
 			std::cout << "Direction " << k << "/" << angles.mdimx << " resolution = " << resInterp << std::endl;
 
-			//The fsc is stored in a metadata and saved
-			fnmd = fn_fscmd_folder + formatString("fscDirection_%i.xmd", k);
-			mdDirFSC.write(fnmd);
+
 
 			dAi(resDirFSC, k) = resInterp;
 			
@@ -1975,6 +1902,8 @@ void ProgFSO::directionalFilter_fast(MultidimArray<std::complex<double>> &FThalf
 		std::cout << "----- Directional resolution estimated -----" <<  std::endl;
     	std::cout << "   " <<  std::endl;
     	std::cout << "Preparing results ..." <<  std::endl;
+
+		
 
     	// ANISOTROPY CURVE
     	aniParam /= (double) angles.mdimx;
@@ -2017,7 +1946,7 @@ void ProgFSO::directionalFilter_fast(MultidimArray<std::complex<double>> &FThalf
 				}
 			}
 		}
-				
+		auto clockstarts = std::chrono::high_resolution_clock::now();
 		//TODO: directionalFilter reads the original map, avoid that
 		// DIRECTIONAL FILTERED MAP
 		MultidimArray<double> filteredMap;
@@ -2028,11 +1957,15 @@ void ProgFSO::directionalFilter_fast(MultidimArray<std::complex<double>> &FThalf
 		//FULL 3DFSC MAP
 		FileName fn;
 		createFullFourier(d3_FSCMap, fn_3dfsc, xvoldim, yvoldim, zvoldim);
+		
+		auto clockends = std::chrono::high_resolution_clock::now(); 
 
+		std::cout << "time = " << std::chrono::duration_cast<std::chrono::microseconds>(clockstarts-clockends).count()  << std::endl;
 		// DIRECTIONAL RESOLUTION DISTRIBUTION
 		fn = fn_fscmd_folder+"Resolution_Distribution.xmd";
 		resolutionDistribution(resDirFSC, fn);
 
+		
 		std::cout << "-------------Finished-------------" << std::endl;
 
 	}

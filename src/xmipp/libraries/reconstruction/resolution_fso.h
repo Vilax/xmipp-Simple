@@ -242,7 +242,7 @@ public:
 		void fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 				         MetaData &mdRes, MultidimArray<double> &threeD_FSC, 
 						 MultidimArray<double> &normalizationMap,
-						 double &fscFreq, double &thrs, double &resol);
+						 double &fscFreq, double &thrs, double &resol, size_t dirnumber);
 
 };
 
