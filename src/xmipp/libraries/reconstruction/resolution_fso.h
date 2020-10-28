@@ -38,7 +38,7 @@ class ProgFSO : public XmippProgram
 {
 public:
         // Filenames
-        FileName fnhalf1, fnhalf2, fnmask, fn_root, fn_3dfsc, fn_fscmd_folder, fn_ani, fnParticles;
+        FileName fnhalf1, fnhalf2, fnmask, fn_root, fn_3dfsc, fn_fscmd_folder, fn_ani, fnOut;
     
         // Double Params
         double sampling, ang_con, thrs;
@@ -52,7 +52,7 @@ public:
 		long Ncomps;
         
         // Bool params
-        bool test, doCrossValidation;
+        bool test, do_3dfsc_filter;
 
         //Matrix2d for the projection angles
         Matrix2D<double> angles;
@@ -168,7 +168,7 @@ public:
 
         void saveAnisotropyToMetadata(MetaData &mdAnisotropy,
     		const MultidimArray<double> &freq,
-			const MultidimArray<double> &anisotropy, FileName &fnmd);
+			const MultidimArray<double> &anisotropy);
 
         void directionalFilter(MultidimArray<std::complex<double>> &FThalf1,
     		MultidimArray<double> &threeDfsc, MultidimArray<double> &filteredMap, 
