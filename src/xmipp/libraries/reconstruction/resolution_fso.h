@@ -65,8 +65,8 @@ public:
 		MultidimArray< double > freqMap;
 
 		//Half maps
-		MultidimArray< std::complex< double > > FT1, FT1_vec;
-		MultidimArray< std::complex< double > > FT2, FT2_vec;
+		MultidimArray< std::complex< double > > FT1, FT1_vec, FT2, FT2_vec;
+		MultidimArray<double> real_z1z2, absz1_vec, absz2_vec;
 
 		//Access indices
 		MultidimArray<long> freqElems, cumpos, freqidx, arr2indx;

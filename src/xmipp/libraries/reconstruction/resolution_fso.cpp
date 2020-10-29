@@ -232,8 +232,10 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 		// FT1_vec, and FT2_vec will storage the Fourier coeffs of the half maps
 		// The storage will be in order, first elements of the vector are the freq, next freq 1 and so on
 		// The position of each component is also stored in the vectors idx_x, idx_y and idx_z
-		FT1_vec.initZeros(Ncomps);
-		FT2_vec = FT1_vec;
+		real_z1z2.initZeros(Ncomps);
+		absz1_vec = real_z1z2;
+		absz2_vec = real_z1z2;
+		
 		// threeD_FSC.resizeNoCopy(FT1_vec);
 		// normalizationMap.resizeNoCopy(FT1_vec);
 		// threeD_FSC.initZeros();
@@ -243,8 +245,8 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 		MultidimArray<double> num, den1, den2;
 		num.initZeros(freqElems);
 		pos.resizeNoCopy(num);
-		freqidx.resizeNoCopy(FT1_vec);
-		arr2indx.resizeNoCopy(FT1_vec);
+		freqidx.resizeNoCopy(real_z1z2);
+		arr2indx.resizeNoCopy(real_z1z2);
 		arr2indx.initZeros();
 		freqidx.initZeros();
 		pos.initZeros();
@@ -257,9 +259,9 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 		int XdimFT1=(int)XSIZE(FT1);
 
 		
-		fx.resizeNoCopy(FT1_vec);
-		fy.resizeNoCopy(FT1_vec);
-		fz.resizeNoCopy(FT1_vec);
+		fx.resizeNoCopy(real_z1z2);
+		fy.resizeNoCopy(real_z1z2);
+		fz.resizeNoCopy(real_z1z2);
 
 		long n = 0;
 		for (int k=0; k<ZdimFT1; k++)
@@ -295,10 +297,15 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 					std::complex<double> &z1 = dAkij(FT1, k, i, j);
 					std::complex<double> &z2 = dAkij(FT2, k, i, j);
 
-					DIRECT_MULTIDIM_ELEM(FT1_vec, idx_count) = z1;
-					DIRECT_MULTIDIM_ELEM(FT2_vec, idx_count) = z2;
+					// DIRECT_MULTIDIM_ELEM(FT1_vec, idx_count) = z1;
+					// DIRECT_MULTIDIM_ELEM(FT2_vec, idx_count) = z2;
 					double absz1 = abs(z1);
 					double absz2 = abs(z2);
+
+					DIRECT_MULTIDIM_ELEM(real_z1z2, idx_count) = real(conj(z1)*z2);
+					DIRECT_MULTIDIM_ELEM(absz1_vec, idx_count) = absz1*absz1;
+					DIRECT_MULTIDIM_ELEM(absz2_vec, idx_count) = absz2*absz2;
+
 					dAi(num,idx) += real(conj(z1) * z2);
 					dAi(den1,idx) += absz1*absz1;
 					dAi(den2,idx) += absz2*absz2;
@@ -383,12 +390,12 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 	// cosine = sqrt(exp( -((cosine -1)*(cosine -1))*aux )); 
 	// thus the computation of the weight is speeded up
 	// aux = 4.0/((cos(ang_con) -1)*(cos(ang_con) -1));
-	aux = (4.0/((cosAngle -1)*(cosAngle -1)))*0.5;
+	aux = (4.0/((cosAngle -1)*(cosAngle -1)));//*0.5;
 	double wt = 0;
 	
 
 	// Computing directional resolution
-	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(FT1_vec)
+	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(real_z1z2)
 	{
 		double ux = DIRECT_MULTIDIM_ELEM(fx, n);
 		double uy = DIRECT_MULTIDIM_ELEM(fy, n);
@@ -400,8 +407,8 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 		
 		if (cosine >= cosAngle)	
 		{
-			std::complex<double> &z1 = DIRECT_MULTIDIM_ELEM(FT1_vec, n);
-			std::complex<double> &z2 = DIRECT_MULTIDIM_ELEM(FT2_vec, n);
+			// std::complex<double> &z1 = DIRECT_MULTIDIM_ELEM(FT1_vec, n);
+			// std::complex<double> &z2 = DIRECT_MULTIDIM_ELEM(FT2_vec, n);
 			
 			// cosine =      exp( -((cosine -1)*(cosine -1))*aux );
 
@@ -410,17 +417,27 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 			cosine = exp( -((cosine -1)*(cosine -1))*aux); 
 			//wt += cosine;
 
-			double absz1 = abs(z1)*cosine;
-			double absz2 = abs(z2)*cosine;
+			// double absz1 = abs(z1);//*cosine;
+			// double absz2 = abs(z2);//*cosine;
 
 			vecidx.push_back(n);
-			cosine *= cosine;
+			// cosine *= cosine; Commented because is equivalent to remove the root square in aux
 			weightFSC3D.push_back(cosine);
 
 			size_t idxf = DIRECT_MULTIDIM_ELEM(freqidx, n);
-			dAi(num, idxf) += real(conj(z1) * z2)  * cosine;
-			dAi(den1,idxf) += absz1*absz1;
-			dAi(den2,idxf) += absz2*absz2;
+			// dAi(num, idxf) += real(conj(z1) * z2)  * cosine;
+			// dAi(den1,idxf) += absz1*absz1*cosine;
+			// dAi(den2,idxf) += absz2*absz2*cosine;
+
+			//std::cout <<  DIRECT_MULTIDIM_ELEM(absz1_vec, n)  * cosine << "   " << absz1*absz1*cosine << std::endl;
+
+			// DIRECT_MULTIDIM_ELEM(real_z1z2, idx_count) = real(conj(z1)*z2);
+			// DIRECT_MULTIDIM_ELEM(absz1_vec, idx_count) = absz1*absz1;
+			// DIRECT_MULTIDIM_ELEM(absz2_vec, idx_count) = absz2*absz2;
+			dAi(num, idxf) += DIRECT_MULTIDIM_ELEM(real_z1z2, n)  * cosine;
+			dAi(den1,idxf) += DIRECT_MULTIDIM_ELEM(absz1_vec, n)  * cosine;
+			dAi(den2,idxf) += DIRECT_MULTIDIM_ELEM(absz2_vec, n)  * cosine;
+
 		}
 	}
 
@@ -442,18 +459,20 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 		dAi(fsc,i) = (dAi(num,i)+1e-38)/(sqrt(dAi(den1,i)*dAi(den2,i))+1e-38);
 		dAi(freq,i) = (float) i / (xvoldim * sampling);
 
+		// std::cout << 1./dAi(freq,i) << "   " << dAi(fsc,i) << "  " << dAi(num,i) << "   " << dAi(den1,i) << "   " << dAi(den2,i) << std::endl;
+
 		// std::cout << i << " " << dAi(fsc,i) << std::endl;
 
-		if (i>0)
-		{
-			id=mdRes.addObject();
-			mdRes.setValue(MDL_RESOLUTION_FREQ,dAi(freq, i),id);
-			mdRes.setValue(MDL_RESOLUTION_FRC,dAi(fsc, i),id);
-			mdRes.setValue(MDL_RESOLUTION_FREQREAL, 1./dAi(freq, i), id);
-		}
+		// if (i>0)
+		// {
+		// 	id=mdRes.addObject();
+		// 	mdRes.setValue(MDL_RESOLUTION_FREQ,dAi(freq, i),id);
+		// 	mdRes.setValue(MDL_RESOLUTION_FRC,dAi(fsc, i),id);
+		// 	mdRes.setValue(MDL_RESOLUTION_FREQREAL, 1./dAi(freq, i), id);
+		// }
 	}
-	fnmd = fnOut + formatString("/dir_fsc/fscDirection_%i.xmd", dirnumber);
-	mdRes.write(fnmd);
+	fnmd = fnOut + formatString("/fscDirection_%i.xmd", dirnumber);
+	//mdRes.write(fnmd);
 	#endif
 
 	//TODO: join with previous loop
@@ -1227,9 +1246,9 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 
 		// Computing directional FSC and 3DFSC
 		MultidimArray<double> fsc, threeD_FSC, normalizationMap;
-		threeD_FSC.resizeNoCopy(FT1_vec);
+		threeD_FSC.resizeNoCopy(real_z1z2);
 		threeD_FSC.initZeros();
-		normalizationMap.resizeNoCopy(FT1_vec);
+		normalizationMap.resizeNoCopy(real_z1z2);
 		normalizationMap.initZeros();
 		
 		
@@ -1246,8 +1265,6 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 			fscDir_fast(fsc, rot, tilt, mdDirFSC, threeD_FSC, normalizationMap, resol, thrs, resInterp, k);
 
 			std::cout << "Direction " << k << "/" << angles.mdimx << " resolution = " << resInterp << std::endl;
-
-
 
 			dAi(resDirFSC, k) = resInterp;
 			
