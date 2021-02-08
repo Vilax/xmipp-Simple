@@ -38,14 +38,14 @@ class ProgFSO : public XmippProgram
 {
 public:
         // Filenames
-        FileName fnhalf1, fnhalf2, fnmask, fn_root, fn_3dfsc, fn_fscmd_folder, fn_ani, fnOut;
+        FileName fnhalf1, fnhalf2, fnmask, fn_3dfsc, fn_ani, fnOut;
     
         // Double Params
         double sampling, ang_con, thrs;
 
 		// Int params
 		int Nthreads;
-		size_t xvoldim, yvoldim, zvoldim;
+		size_t xvoldim, yvoldim, zvoldim, fscshellNum;
 
 		//long params
 		//number of Fourier elements
@@ -55,18 +55,19 @@ public:
         bool test, do_3dfsc_filter;
 
         //Matrix2d for the projection angles
-        Matrix2D<double> angles;
+        Matrix2D<float> angles;
 
 		//Frequency vectors and frequency map
 		Matrix1D<double> freq_fourier_x;
 		Matrix1D<double> freq_fourier_y;
 		Matrix1D<double> freq_fourier_z;
-		MultidimArray<double> fx, fy, fz, threeD_FSC, normalizationMap;
+		MultidimArray<float> fx, fy, fz;
+	    MultidimArray<float> threeD_FSC, normalizationMap, aniFilter;
 		MultidimArray< double > freqMap;
 
 		//Half maps
-		MultidimArray< std::complex< double > > FT1, FT1_vec, FT2, FT2_vec;
-		MultidimArray<double> real_z1z2, absz1_vec, absz2_vec;
+		MultidimArray< std::complex< double > > FT1, FT2;
+		MultidimArray<float> real_z1z2, absz1_vec, absz2_vec;
 
 		//Access indices
 		MultidimArray<long> freqElems, cumpos, freqidx, arr2indx;
@@ -139,7 +140,7 @@ public:
         
         // Defines a Matrix2D with coordinates Rot and tilt achieving a uniform coverage of the
         // projection sphere. Bool alot = True, implies a dense converage
-        void generateDirections(Matrix2D<double> &angles, bool alot);
+        void generateDirections(Matrix2D<float> &angles, bool alot);
 
         void interpolationCoarse(MultidimArray< double > fsc,
     		const Matrix2D<double> &angles,
@@ -190,7 +191,34 @@ public:
 
 		void run_fast();
 
-		void run_old();
+
+
+		void arrangeFSC_and_fscGlobal(double sampling_rate, 
+						double &thrs, double &resInterp, MultidimArray<double> &freq);
+
+		void fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
+				         MetaData &mdRes, MultidimArray<double> &threeD_FSC, 
+						 MultidimArray<double> &normalizationMap,
+						 double &fscFreq, double &thrs, double &resol, size_t dirnumber);
+
+		void fscDir_fast_cv(MultidimArray<double> &fsc, double rot, double tilt,
+				         MetaData &mdRes, MultidimArray<double> &threeD_FSC, 
+						 MultidimArray<double> &normalizationMap,
+						 double &fscFreq, double &thrs, double &resol, size_t dirnumber);
+
+		void fscDir_fast_all_angles(MultidimArray<double> &fsc, double rot, double tilt,
+				         MetaData &mdRes, MultidimArray<double> &threeD_FSC, 
+						 MultidimArray<double> &normalizationMap,
+						 double &fscFreq, double &thrs, double &resol, size_t dirnumber);
+		
+		void all_dir_fsc_at_once(MultidimArray<double> &aniParam);
+
+};
+
+#endif
+
+
+/*		void run_old();
 
         void estimateSSNR(MultidimArray<double> &half1, MultidimArray<double> &half2,
 		                int m1sizeX, int m1sizeY, int m1sizeZ);
@@ -236,14 +264,4 @@ public:
 		void findIndexinVector(double freq, double x_dir, size_t &idx,
 								Matrix1D<double> &freq_fourier);
 
-		void arrangeFSC_and_fscGlobal(double sampling_rate, 
-				double &fscFreq, double &thrs, double &resInterp, MultidimArray<double> &freq);
-
-		void fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
-				         MetaData &mdRes, MultidimArray<double> &threeD_FSC, 
-						 MultidimArray<double> &normalizationMap,
-						 double &fscFreq, double &thrs, double &resol, size_t dirnumber);
-
-};
-
-#endif
+								*/

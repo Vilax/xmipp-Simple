@@ -32,11 +32,15 @@
 
 void ProgFSO::defineParams()
 {
-	addUsageLine("Calculate global resolution anisotropy - OFSC curve - via directional FSC measurements.");
-	addUsageLine("If a set of particle is given, the contribution of the particle distribution to the resolution is also analyzed");
+	addUsageLine("Calculate global resolution anisotropy - FSO curve - via directional FSC measurements.");
+	addUsageLine("Next results are obtained:");
+	addUsageLine("  1) FSO curve");
+	addUsageLine("  2) Global resolution from FSO and FSC");
+	addUsageLine("  3) 3DFSC");
+	addUsageLine("  4) Anisotropic filter");
 	addUsageLine("Reference: J.L. Vilas, H.D. Tagare, XXXXX (2020)");
 	addUsageLine("+ ");
-	addUsageLine("+* Directional Fourier Shell Correlation (FSC)", true);
+	addUsageLine("+* Directional Fourier Shell Correlation (dFSC)", true);
 	addUsageLine("+ This program may be used to estimate the directional FSC between two half maps.");
 	addUsageLine("+ The directionality is measured by means of conical-like filters in Fourier Space. To avoid possible Gibbs effects ");
 	addUsageLine("+ the filters are gaussian functions with their respective maxima along the filtering direction. A set of 321 directions ");
@@ -44,23 +48,23 @@ void ProgFSO::defineParams()
 	addUsageLine("+ The result is a set of 321 FSC curves. From then a 3DFSC is obtained by interpolation. Note that as well as it occurs with");
 	addUsageLine("+ global FSC, the directional FSC is mask dependent.");
 	addUsageLine(" ");
-	addUsageLine("+* Occupancy Fourier Shell Curve (OFSC)", true);
-	addUsageLine("+ The Occupancy Fourier Shell Curve can be obtained from the set of directional FSC curves estimated before.");
-	addUsageLine("+ To do that, the two half maps are used to determine the Global FSC at threshold 0.143. Then, the ratio between the number");
+	addUsageLine("+* Fourier Shell Occupancy (FSO)", true);
+	addUsageLine("+ The Fourier Shell Occupancy Curve can be obtained from a set of directional FSC.");
+	addUsageLine("+ To do that, two half maps are used to determine the Global FSC at threshold 0.143. Then, the ratio between the number");
 	addUsageLine("+ of directions with resolution higher (better) than the Global resolution and the total number of measured directions is");
 	addUsageLine("+ calculated at different frequencies (resolutions). Note that this ratio is between 0 (all directions presents worse)");
 	addUsageLine("+ resolution than the global FSC)  and 1 (all directions present better resolution than the FSC) at a given resolution.");
-	addUsageLine("+ In the particular case for which the OFSC curve takes the value of 0.5, then half of the directions are better, and.");
-	addUsageLine("+ the other half are worse than the FSC. Therefore, the OFCS curve at 0.5 should be the FSC value. Note that a map is ");
-	addUsageLine("+ isotropic if all directional resolution are similar, and anisotropic is there are significant resolution values along");
-	addUsageLine("+ different directions. Thus, when the OFSC present a sharp cliff, it means step-like function the map will be isotropic.");
+	addUsageLine("+ In the particular case for which the FSO curve takes the value of 0.5, then half of the directions are better, and.");
+	addUsageLine("+ the other half are worse than the FSC, this situation occurs at the resoltuion of hte map. It means the FSO = 0.5 at the ");
+	addUsageLine("+ FSC resolution. A map is isotropic if all directional resolution are similar, and anisotropic is there are significant resolution values along");
+	addUsageLine("+ different directions. Thus, when the FSO presents a sharp cliff, a step-like function, the map will be isotropic.");
 	addUsageLine("+ In contrast, when the OFSC shows a slope the map will be anisotropic. The lesser slope the higher resolution isotropy.");
 	addUsageLine("+ ");
-	addUsageLine("+* Particle contribution to the resolution", true);
-	addUsageLine("+ If a set of particle is provided, the algorithm will determine the contribution of each particle to the directional");
-	addUsageLine("+ resolution and it's effect in the resolution anisotropy. It means to determine if the directional resolution is ");
-	addUsageLine("+ explained by particles. If not, then probably your set of particle contains empty particles (noise), the reconstruction");
-	addUsageLine("+ presents heterogeneity or flexibility, in that the heterogeneity should be solved and the map reconstructed again.");
+	addUsageLine("+* Resolution Distribution and 3DFSC", true);
+	addUsageLine("+ The directional-FSC, dFSC is estimated along 321 directions on the projection sphere. For each direction the corresponding");
+	addUsageLine("+ resolution is determined. Thus, it is possible to determine the resolution distribution on the projection sphere.");//. It means to determine if the directional resolution is ");
+	addUsageLine("+ This distribution is saved in the output metadata named resolutionDistribution.xmd. Also by means of all dFSC, the 3DFSC");
+	addUsageLine("+ is calculated and saved as 3dFSC.mrc, which gives an idea about the information distributionin Fourier Space.");
 	addUsageLine(" ");
 	addUsageLine(" ");
 	addSeeAlsoLine("resolution_fsc");
@@ -68,13 +72,13 @@ void ProgFSO::defineParams()
 	addParamsLine("   --half1 <input_file>               : Input Half map 1");
 	addParamsLine("   --half2 <input_file>               : Input Half map 2");
 
-	addParamsLine("   [-o <output_folder=\"\">]  : Folder where the results will be stored.");
+	addParamsLine("   [-o <output_folder=\"\">]          : Folder where the results will be stored.");
 
 	addParamsLine("   [--sampling <Ts=1>]                : (Optical) Pixel size (Angstrom). If it is not provided by default will be 1 A/px.");
-	addParamsLine("   [--mask <input_file=\"\">]         : (Optional) Smooth mask to remove noise.");
+	addParamsLine("   [--mask <input_file=\"\">]         : (Optional) Smooth mask to remove noise. It it is not provided, the computation will be carried out without mask.");
 
-	addParamsLine("   [--anglecone <ang_con=-1>]         : (Optional) Angle Cone (angle axis-generatrix) for estimating the directional FSC");	
-	addParamsLine("   [--threshold <ang_con=-1>]		 : (Optional) Threshold for cross validation");
+	addParamsLine("   [--anglecone <ang_con=17>]         : (Optional) Angle Cone (angle axis-generatrix) for estimating the directional FSC");	
+	addParamsLine("   [--threshold <thrs=0.143>]		 : (Optional) Threshold for cross validation");
 
     addParamsLine("   [--threedfsc_filter]           		 : (Optional) Put this flag to estimate the 3DFSC, and use it to obtain a directionally filtered map. It mean to apply an anisotropic filter.");	
 	
@@ -91,8 +95,6 @@ void ProgFSO::defineParams()
 
 void ProgFSO::readParams()
 {
-	
-
 	fnhalf1 = getParam("--half1");
 	fnhalf2 = getParam("--half2");
 	fnOut = getParam("-o");
@@ -107,15 +109,24 @@ void ProgFSO::readParams()
 	Nthreads = getDoubleParam("--threads");
 }
 
+// DEFINEFREQUENCIES - This function creates a new volume (MultidimArray) in Fourier Space named freqMap.
+// Each voxel of the new volume is the corresponding frequency in Fourier Space. The input myfftV is used
+// to determine the size of the freqMap map, and inputVol to define the frequencies in the Fourier space.
+// The frequencies along thre three axis are defined as freq_fourier_x, freq_fourier_y, freq_fourier_z.
+// Also a sphere is created to localize the frequencies in Fourier space, by means of the chimera threshold.
+// The output variables sphere, freq_fourier_x, freq_fourier_y, freq_fourier_z, freqElems, freqMap.
 void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myfftV,
 		const MultidimArray<double> &inputVol)
 {
+	// u is the frequency
 	double u;
 
+	// Initializing the frequency vectors
 	freq_fourier_z.initZeros(ZSIZE(myfftV));
 	freq_fourier_x.initZeros(XSIZE(myfftV));
 	freq_fourier_y.initZeros(YSIZE(myfftV));
 
+	// Defining frequency components. First element should be 0, it is set as the smallest number to avoid singularities
 	VEC_ELEM(freq_fourier_z,0) = 1e-38;
 	for(size_t k=1; k<ZSIZE(myfftV); ++k){
 		FFT_IDX2DIGFREQ(k,ZSIZE(inputVol), u);
@@ -134,6 +145,7 @@ void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myf
 		VEC_ELEM(freq_fourier_x,k) = u;
 	}
 
+	//Initializing map with frequencies
 	freqMap.resizeNoCopy(myfftV);
 	freqMap.initConstant(1.9);  //Nyquist is 2, we take 1.9 greater than Nyquist
 
@@ -142,9 +154,12 @@ void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myf
 	zvoldim = ZSIZE(inputVol);
 	freqElems.initZeros(xvoldim/2+1);
 
+	// Directional frequencies along each direction
 	double uz, uy, ux, uz2, u2, uz2y2;
 	long n=0;
 	int idx = 0;
+
+	// Ncomps is the number of frequencies lesser than Nyquist
 	Ncomps=0;
 	
 	//SPHERE FREQUENCY REFERENCE
@@ -152,7 +167,6 @@ void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myf
 	sphere.resizeNoCopy(freqMap);
 
 	//TODO: check in the for enter in the if conditions
-
 	for(size_t k=0; k<ZSIZE(myfftV); ++k)
 	{
 		uz = VEC_ELEM(freq_fourier_z,k);
@@ -174,14 +188,7 @@ void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myf
 					DIRECT_MULTIDIM_ELEM(freqElems, idx) += 1;
 					DIRECT_MULTIDIM_ELEM(sphere,n) = -ux;
 
-					if ((k != 0) || (i != 0) || (j != 0))
-					{
-						DIRECT_MULTIDIM_ELEM(freqMap,n) = 1/ux;
-					}
-					else
-					{
-						DIRECT_MULTIDIM_ELEM(freqMap,n) = 1e38;
-					}
+					DIRECT_MULTIDIM_ELEM(freqMap,n) = 1/ux;
 
 
 					if ((j == 0) && (uy<0))
@@ -207,20 +214,28 @@ void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myf
 
 	FileName fn;
 	fn = fnOut+"/sphere.mrc";
+	// The fftshift is removed and the sphere is stored in disc
 	createFullFourier(sphere, fn, xvoldim, yvoldim, zvoldim);
 }
 
 
+// ARRANGEFSC_AND_FSCGLOBAL: This function estimates the global resolution FSC FSC=real(z1*conj(z2)/(||z1||·||z2||)
+// and precomputes the products z1*conj(z2),  ||z1||, ||z2||, to calculate faster the directional FSC. The input are
+// the Fourier transform of two half maps (FT1, FT2) defined in the .h, the sampling_rate, the used threshold (thrs) 
+// to that define the resolution (FSC-threshold). The output are 1) the resolution of the map, fscResolution, in Angstrom.
+// 2) three vectors defined in the .h, real_z1z2, absz1_vec, absz2_vec, with z1*conj(z2),  ||z1||, ||z2||, defined in 
+// float to speed up the computation and reduce the use of memory. These vector make use of the two half maps FT1, and FT2. 3) 
+// 3) To speed up the algorithm, only are considered those voxels with frequency lesser than Nyquist, 0.5. The vector idx_count
+// stores all frequencies lesser than Nyquist. This vector determines the frequency of each component of 
+// real_z1z2, absz1_vec, absz2_vec.
 void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
-				double &fscFreq, double &thrs, double &resInterp, MultidimArray<double> &freq)
+				double &thrs, double &fscResolution, MultidimArray<double> &freq)
 	{
-
 		// Determining the cumulative number of frequencies per shell number, cumpos
 		// First shell has 0 elements
 		// second shell has the number of elements of the first shell
 		// Third shell has the number of elements of the first+sencond shells and so on
-		size_t dim = NZYXSIZE(freqElems);
-
+		size_t dim = NZYXSIZE(freqElems); //freqElems in .h and set in defineFreq function
 		cumpos.resizeNoCopy(dim);
 
 		DIRECT_MULTIDIM_ELEM(cumpos,0) = 0;
@@ -229,23 +244,26 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 			DIRECT_MULTIDIM_ELEM(cumpos,n) = DIRECT_MULTIDIM_ELEM(cumpos,n-1) + DIRECT_MULTIDIM_ELEM(freqElems,n-1);
 		}
  		
-		// FT1_vec, and FT2_vec will storage the Fourier coeffs of the half maps
-		// The storage will be in order, first elements of the vector are the freq, next freq 1 and so on
-		// The position of each component is also stored in the vectors idx_x, idx_y and idx_z
+		// real_z1z2, absz1_vec and absz2_vec will storage real(z1*conj(z2)), ||z1|| and ||z2|| using the
+		//Fourier Coefficients z1, and z2 of both half maps. The storage will be in order, first elements of
+		// the vector are the freq 0, next freq 1 and so on. Ncomps is the number of components with frequency
+		// lesser than Nyquist (defined in defineFreq)
 		real_z1z2.initZeros(Ncomps);
 		absz1_vec = real_z1z2;
 		absz2_vec = real_z1z2;
 		
-		// threeD_FSC.resizeNoCopy(FT1_vec);
-		// normalizationMap.resizeNoCopy(FT1_vec);
-		// threeD_FSC.initZeros();
-		// normalizationMap.initZeros();
 
+		// num and den are de numerator and denominator of the fsc
 		MultidimArray<long> pos;
 		MultidimArray<double> num, den1, den2;
 		num.initZeros(freqElems);
 		pos.resizeNoCopy(num);
 		freqidx.resizeNoCopy(real_z1z2);
+
+		// arr2indx is the position of in Fourier space. It is defined in the .h
+		// Because we only work with the frequencies lesser than nyquist their position
+		// int he Fourier space is lost. arr2indx has the position of each frequency. 
+		// It is used at the end of the algorithm to generate the 3DFSC
 		arr2indx.resizeNoCopy(real_z1z2);
 		arr2indx.initZeros();
 		freqidx.initZeros();
@@ -258,7 +276,10 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 		int YdimFT1=(int)YSIZE(FT1);
 		int XdimFT1=(int)XSIZE(FT1);
 
-		
+		// fx, fy, fz, defined in the .h are the frequencies of each pixel with frequency
+		// lesser than Nyquist along each axis. They are used to compute the dot product
+		// between each vector position and the direction of the cone to calculate the
+		// directional FSC
 		fx.resizeNoCopy(real_z1z2);
 		fy.resizeNoCopy(real_z1z2);
 		fz.resizeNoCopy(real_z1z2);
@@ -278,33 +299,36 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 					double f = 1/iun;
 					++n;
 
+					// Only reachable frequencies
 					if (f>0.5)
 						continue;
 					
+					// Index of each frequency
 					int idx = (int) round(f * xvoldim);
 					
 					int idx_count = DIRECT_MULTIDIM_ELEM(cumpos, idx) + DIRECT_MULTIDIM_ELEM(pos, idx); 
 
 					DIRECT_MULTIDIM_ELEM(arr2indx, idx_count) = n - 1;
 
-					DIRECT_MULTIDIM_ELEM(fx, idx_count) = ux*iun;
-					DIRECT_MULTIDIM_ELEM(fy, idx_count) = uy*iun;
-					DIRECT_MULTIDIM_ELEM(fz, idx_count) = uz*iun;
+					// Storing normalized frequencies
+					DIRECT_MULTIDIM_ELEM(fx, idx_count) = (float) ux*iun;
+					DIRECT_MULTIDIM_ELEM(fy, idx_count) = (float) uy*iun;
+					DIRECT_MULTIDIM_ELEM(fz, idx_count) = (float) uz*iun;
 
-
+					// In this vector we store the index of each Fourier coefficient, thus in the 
+					// directional FSC estimation the calculus of the index is avoided speeding up the calculation
 					DIRECT_MULTIDIM_ELEM(freqidx, idx_count) = idx;
 
+					// Fourier coefficients of both halves
 					std::complex<double> &z1 = dAkij(FT1, k, i, j);
 					std::complex<double> &z2 = dAkij(FT2, k, i, j);
 
-					// DIRECT_MULTIDIM_ELEM(FT1_vec, idx_count) = z1;
-					// DIRECT_MULTIDIM_ELEM(FT2_vec, idx_count) = z2;
 					double absz1 = abs(z1);
 					double absz2 = abs(z2);
 
-					DIRECT_MULTIDIM_ELEM(real_z1z2, idx_count) = real(conj(z1)*z2);
-					DIRECT_MULTIDIM_ELEM(absz1_vec, idx_count) = absz1*absz1;
-					DIRECT_MULTIDIM_ELEM(absz2_vec, idx_count) = absz2*absz2;
+					DIRECT_MULTIDIM_ELEM(real_z1z2, idx_count) = (float) real(conj(z1)*z2);
+					DIRECT_MULTIDIM_ELEM(absz1_vec, idx_count) = (float) absz1*absz1;
+					DIRECT_MULTIDIM_ELEM(absz2_vec, idx_count) = (float) absz2*absz2;
 
 					dAi(num,idx) += real(conj(z1) * z2);
 					dAi(den1,idx) += absz1*absz1;
@@ -341,284 +365,282 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 		// Here the FSC at 0.143 is obtained byt interpolating
 		FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
 		{
-			if ( (dAi(frc,i)<=thrs) && (i>2) )
+			double ff = dAi(frc,i);
+			if ( (ff<=thrs) && (i>2) )
 			{
-			double y2, y1, x2, x1, slope, ny;
-			y2 = dAi(freq,i);
-			y1 = dAi(freq,i-1);
-			x2 = dAi(frc,i);
-			x1 = dAi(frc,i-1);
+				std::cout << "shell = " << i << std::endl;
+				fscshellNum = i;
+				double y2, y1, x2, x1, slope, ny;
+				y2 = ff;
+				double ff_1 = dAi(freq,i-1);
+				y1 = ff_1;
+				x2 = ff;
+				x1 = ff_1;
 
-			slope = (y2 - y1)/(x2 - x1);
-			ny = y2 - slope*x2;
+				slope = (y2 - y1)/(x2 - x1);
+				ny = y2 - slope*x2;
 
-			resInterp = 1/(slope*thrs + ny);
-			fscFreq = 1.0/dAi(freq, i);
-			break;
+				fscResolution = 1/(slope*thrs + ny);
+				break;
 			}
 		}
-		std::cout << "Resolution " << fscFreq << " " << resInterp << std::endl;
+		std::cout << "Resolution " << fscResolution << std::endl;
+
+		aniFilter.initZeros(freqidx);
+
+		// FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(freqidx)
+		// {
+		// 	if (DIRECT_MULTIDIM_ELEM(freqidx, n) < fscshellNum)
+		// 		DIRECT_MULTIDIM_ELEM(aniFilter, n) = 1;
+		// }
+
 
 	}
 
 
+// FSCDIR_FAST: computes the directional FSC along a direction given by the angles rot and tilt. 
+// Thus the directional resolution, resol, is estimated with the threshold, thrs.
+// The direcional FSC is stored in a metadata mdRes and in the multidimarray fsc. Later, this multidimarray
+// will be used to estimate the FSO.
+// In addition, the 3dfsc and a normalizationmap (needed to estimate the 3dfsc) are created. For each direction
+// these vectors are updated
 void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 				MetaData &mdRes, MultidimArray<double> &threeD_FSC, MultidimArray<double> &normalizationMap,
 				double &fscFreq, double &thrs, double &resol, size_t dirnumber)
 {
 	size_t dim = NZYXSIZE(freqElems);
 	
-	
-	MultidimArray<double> num, den1, den2;	
+	// numerator and denominator of the fsc
+	MultidimArray<float> num, den1, den2;	
 	num.initZeros(dim);
 	den1.initZeros(dim);
 	den2.initZeros(dim);
 
+	// in vecidx the position n of the vector real_z1z2 is stored.
+	// this allow to have a quick access to the frequencies and the
+	// positions of the threeD_FSC without sweeping all positions
 	std::vector<long> vecidx;
+	// the used weight of the directional filter 
 	std::vector<double> weightFSC3D;
 
+	//Parameter to determine the direction of the cone
+	float x_dir, y_dir, z_dir, cosAngle, aux;
+	x_dir = sinf(tilt)*cosf(rot);
+	y_dir = sinf(tilt)*sinf(rot);
+	z_dir = cosf(tilt);
 
-	//Parameter to determine the cone
-	double x_dir, y_dir, z_dir, cosAngle, aux;
-	x_dir = sin(tilt)*cos(rot);
-	y_dir = sin(tilt)*sin(rot);
-	z_dir = cos(tilt);
-
-	cosAngle = cos(ang_con);
+	cosAngle = (float) cos(ang_con);
 
 	// It is multiply by 0.5 because later the weight is
 	// cosine = sqrt(exp( -((cosine -1)*(cosine -1))*aux )); 
 	// thus the computation of the weight is speeded up
 	// aux = 4.0/((cos(ang_con) -1)*(cos(ang_con) -1));
 	aux = (4.0/((cosAngle -1)*(cosAngle -1)));//*0.5;
-	double wt = 0;
-	
 
 	// Computing directional resolution
 	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(real_z1z2)
 	{
-		double ux = DIRECT_MULTIDIM_ELEM(fx, n);
-		double uy = DIRECT_MULTIDIM_ELEM(fy, n);
-		double uz = DIRECT_MULTIDIM_ELEM(fz, n);
+		// frecuencies of the fourier position
+		float ux = DIRECT_MULTIDIM_ELEM(fx, n);
+		float uy = DIRECT_MULTIDIM_ELEM(fy, n);
+		float uz = DIRECT_MULTIDIM_ELEM(fz, n);
 
-		double cosine = fabs(x_dir*ux + y_dir*uy + z_dir*uz);
-
-		//std::cout << ux << " " << uy << " " << uz << " " << cosine << std::endl;
+		// angle between the position and the direction of the cone
+		float cosine = fabs(x_dir*ux + y_dir*uy + z_dir*uz);
 		
+		// Only points inside the cone
 		if (cosine >= cosAngle)	
 		{
-			// std::complex<double> &z1 = DIRECT_MULTIDIM_ELEM(FT1_vec, n);
-			// std::complex<double> &z2 = DIRECT_MULTIDIM_ELEM(FT2_vec, n);
-			
-			// cosine =      exp( -((cosine -1)*(cosine -1))*aux );
-
 			// in fact it is sqrt(exp( -((cosine -1)*(cosine -1))*aux )); 
 			// For shake of performance The sqrt is avoided dividing the by 2 in aux
-			cosine = exp( -((cosine -1)*(cosine -1))*aux); 
-			//wt += cosine;
-
-			// double absz1 = abs(z1);//*cosine;
-			// double absz2 = abs(z2);//*cosine;
+			cosine = expf( -((cosine -1)*(cosine -1))*aux); 
 
 			vecidx.push_back(n);
 			// cosine *= cosine; Commented because is equivalent to remove the root square in aux
 			weightFSC3D.push_back(cosine);
 
+			// selecting the frequency of the shell
 			size_t idxf = DIRECT_MULTIDIM_ELEM(freqidx, n);
-			// dAi(num, idxf) += real(conj(z1) * z2)  * cosine;
-			// dAi(den1,idxf) += absz1*absz1*cosine;
-			// dAi(den2,idxf) += absz2*absz2*cosine;
 
-			//std::cout <<  DIRECT_MULTIDIM_ELEM(absz1_vec, n)  * cosine << "   " << absz1*absz1*cosine << std::endl;
-
-			// DIRECT_MULTIDIM_ELEM(real_z1z2, idx_count) = real(conj(z1)*z2);
-			// DIRECT_MULTIDIM_ELEM(absz1_vec, idx_count) = absz1*absz1;
-			// DIRECT_MULTIDIM_ELEM(absz2_vec, idx_count) = absz2*absz2;
+			// computing the numerator and denominator
 			dAi(num, idxf) += DIRECT_MULTIDIM_ELEM(real_z1z2, n)  * cosine;
 			dAi(den1,idxf) += DIRECT_MULTIDIM_ELEM(absz1_vec, n)  * cosine;
 			dAi(den2,idxf) += DIRECT_MULTIDIM_ELEM(absz2_vec, n)  * cosine;
-
 		}
 	}
 
-	MultidimArray< double > freq;
-	MultidimArray< double > frc;
-	freq.initZeros(dim);
-	fsc.resizeNoCopy(freq);
+	fsc.resizeNoCopy(num);
 	fsc.initConstant(1.0);
 
-
 	//The fsc is stored in a metadata and saved
-	#ifdef SAVE_DIR_FSC
 	FileName fnmd;
-	
+	bool flagRes = true;
 	size_t id;
-	FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
+	FOR_ALL_ELEMENTS_IN_ARRAY1D(num)
 	{
+		dAi(fsc,i) = (dAi(num,i))/(sqrt(dAi(den1,i)*dAi(den2,i))+1e-38);
+		double ff = (float) i / (xvoldim * sampling); // frequency
 
-		dAi(fsc,i) = (dAi(num,i)+1e-38)/(sqrt(dAi(den1,i)*dAi(den2,i))+1e-38);
-		dAi(freq,i) = (float) i / (xvoldim * sampling);
+		if (dAi(fsc,i)<0)
+			dAi(fsc,i) = 0;
 
-		// std::cout << 1./dAi(freq,i) << "   " << dAi(fsc,i) << "  " << dAi(num,i) << "   " << dAi(den1,i) << "   " << dAi(den2,i) << std::endl;
-
-		// std::cout << i << " " << dAi(fsc,i) << std::endl;
-
-		// if (i>0)
-		// {
-		// 	id=mdRes.addObject();
-		// 	mdRes.setValue(MDL_RESOLUTION_FREQ,dAi(freq, i),id);
-		// 	mdRes.setValue(MDL_RESOLUTION_FRC,dAi(fsc, i),id);
-		// 	mdRes.setValue(MDL_RESOLUTION_FREQREAL, 1./dAi(freq, i), id);
-		// }
-	}
-	fnmd = fnOut + formatString("/fscDirection_%i.xmd", dirnumber);
-	//mdRes.write(fnmd);
-	#endif
-
-	//TODO: join with previous loop
-	FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
-	{
-		if ( (dAi(fsc,i)<=thrs) && (i>2) )
+		if (i>0)
 		{
-			double y2, y1, x2, x1, slope, ny;
-			y2 = dAi(freq,i);
-			y1 = dAi(freq,i-1);
-			x2 = dAi(fsc,i);
-			x1 = dAi(fsc,i-1);
-
-			slope = (y2 - y1)/(x2 - x1);
-			ny = y2 - slope*x2;
-
-			resol = 1/(slope*thrs + ny);
-			fscFreq = 1.0/dAi(freq, i);
-			break;
+			#ifdef SAVE_DIR_FSC
+			id=mdRes.addObject();
+			mdRes.setValue(MDL_RESOLUTION_FREQ,ff,id);
+			mdRes.setValue(MDL_RESOLUTION_FRC,dAi(fsc, i),id);
+			mdRes.setValue(MDL_RESOLUTION_FREQREAL, 1./ff, id);
+			#endif
+			if ((i>2) && (dAi(fsc,i)<=thrs) && (flagRes))
+			{
+				flagRes = false;
+				resol = 1./ff;
+			}
 		}
 	}
+
+	#ifdef SAVE_DIR_FSC
+	fnmd = fnOut + formatString("/fscDirection_%i.xmd", dirnumber);
+	mdRes.write(fnmd);
+	#endif
+
+	// the 3dfsc is computed and updated
 	if (do_3dfsc_filter)
 	{
+		// sizevec is the number of points inside the cone
 		size_t sizevec = vecidx.size();
 		for (size_t kk = 0; kk< sizevec; ++kk)
 		{
-			double w = weightFSC3D[kk];
-			long n = vecidx[kk];
-			size_t ind = DIRECT_MULTIDIM_ELEM(freqidx, n);
+			double w = weightFSC3D[kk]; // the weights
+			long n = vecidx[kk]; 		// position in fourier space
+			size_t ind = DIRECT_MULTIDIM_ELEM(freqidx, n); 	// position in the fsc array
 			
+			// 3dfsc considering the weight
 			DIRECT_MULTIDIM_ELEM(threeD_FSC, n) += w*DIRECT_MULTIDIM_ELEM(fsc, ind);
+			// normalization map, we will divide by it once all direction are computed
 			DIRECT_MULTIDIM_ELEM(normalizationMap, n) += w;
 		}
 	}
 }
 
 
-void ProgFSO::generateDirections(Matrix2D<double> &angles, bool alot)
+// GENERATEDIRECTIONS: This functions provides a uniform coverage of the projection sphere.
+// The picking on the sphere is given by two angle rot and tilt which are kept in a matrix2d
+// the first row is the rot from 0-360 latitude (angle measured in the horizontal plane)
+// the second row is the tilt from 0-90  angle between the horizontal plane and the  point 
+// on the sphere 
+// The flag true set the number of picked points (alot = true means 321, alot=false means 80)
+// Angles are in radians
+void ProgFSO::generateDirections(Matrix2D<float> &angles, bool alot)
 {
 	if (alot == true)
 	{
 		angles.initZeros(2,321);
-		MAT_ELEM(angles,0,0)=0;MAT_ELEM(angles,1,0)=0;
-		MAT_ELEM(angles,0,1)=324;MAT_ELEM(angles,1,1)=63.4349;
-		MAT_ELEM(angles,0,2)=36;MAT_ELEM(angles,1,2)=63.4349;
-		MAT_ELEM(angles,0,3)=180;MAT_ELEM(angles,1,3)=63.435;
-		MAT_ELEM(angles,0,4)=252;MAT_ELEM(angles,1,4)=63.435;
-		MAT_ELEM(angles,0,5)=108;MAT_ELEM(angles,1,5)=63.435;
-		MAT_ELEM(angles,0,6)=324;MAT_ELEM(angles,1,6)=31.7175;
-		MAT_ELEM(angles,0,7)=36;MAT_ELEM(angles,1,7)=31.7175;
-		MAT_ELEM(angles,0,8)=0;MAT_ELEM(angles,1,8)=58.2825;
-		MAT_ELEM(angles,0,9)=288;MAT_ELEM(angles,1,9)=58.2825;
-		MAT_ELEM(angles,0,10)=342;MAT_ELEM(angles,1,10)=90;
-		MAT_ELEM(angles,0,11)=306;MAT_ELEM(angles,1,11)=90;
-		MAT_ELEM(angles,0,12)=72;MAT_ELEM(angles,1,12)=58.2825;
-		MAT_ELEM(angles,0,13)=18;MAT_ELEM(angles,1,13)=90;
-		MAT_ELEM(angles,0,14)=54;MAT_ELEM(angles,1,14)=90;
-		MAT_ELEM(angles,0,15)=90;MAT_ELEM(angles,1,15)=90;
-		MAT_ELEM(angles,0,16)=216;MAT_ELEM(angles,1,16)=58.282;
-		MAT_ELEM(angles,0,17)=144;MAT_ELEM(angles,1,17)=58.282;
-		MAT_ELEM(angles,0,18)=180;MAT_ELEM(angles,1,18)=31.718;
-		MAT_ELEM(angles,0,19)=252;MAT_ELEM(angles,1,19)=31.718;
-		MAT_ELEM(angles,0,20)=108;MAT_ELEM(angles,1,20)=31.718;
-		MAT_ELEM(angles,0,21)=346.3862;MAT_ELEM(angles,1,21)=43.6469;
-		MAT_ELEM(angles,0,22)=58.3862;MAT_ELEM(angles,1,22)=43.6469;
-		MAT_ELEM(angles,0,23)=274.3862;MAT_ELEM(angles,1,23)=43.6469;
-		MAT_ELEM(angles,0,24)=0;MAT_ELEM(angles,1,24)=90;
-		MAT_ELEM(angles,0,25)=72;MAT_ELEM(angles,1,25)=90;
-		MAT_ELEM(angles,0,26)=288;MAT_ELEM(angles,1,26)=90;
-		MAT_ELEM(angles,0,27)=225.7323;MAT_ELEM(angles,1,27)=73.955;
-		MAT_ELEM(angles,0,28)=153.7323;MAT_ELEM(angles,1,28)=73.955;
-		MAT_ELEM(angles,0,29)=216;MAT_ELEM(angles,1,29)=26.565;
-		MAT_ELEM(angles,0,30)=144;MAT_ELEM(angles,1,30)=26.565;
-		MAT_ELEM(angles,0,31)=0;MAT_ELEM(angles,1,31)=26.5651;
-		MAT_ELEM(angles,0,32)=72;MAT_ELEM(angles,1,32)=26.5651;
-		MAT_ELEM(angles,0,33)=288;MAT_ELEM(angles,1,33)=26.5651;
-		MAT_ELEM(angles,0,34)=350.2677;MAT_ELEM(angles,1,34)=73.9549;
-		MAT_ELEM(angles,0,35)=62.2677;MAT_ELEM(angles,1,35)=73.9549;
-		MAT_ELEM(angles,0,36)=278.2677;MAT_ELEM(angles,1,36)=73.9549;
-		MAT_ELEM(angles,0,37)=206.2677;MAT_ELEM(angles,1,37)=73.955;
-		MAT_ELEM(angles,0,38)=134.2677;MAT_ELEM(angles,1,38)=73.955;
-		MAT_ELEM(angles,0,39)=202.3862;MAT_ELEM(angles,1,39)=43.647;
-		MAT_ELEM(angles,0,40)=130.3862;MAT_ELEM(angles,1,40)=43.647;
-		MAT_ELEM(angles,0,41)=13.6138;MAT_ELEM(angles,1,41)=43.6469;
-		MAT_ELEM(angles,0,42)=85.6138;MAT_ELEM(angles,1,42)=43.6469;
-		MAT_ELEM(angles,0,43)=301.6138;MAT_ELEM(angles,1,43)=43.6469;
-		MAT_ELEM(angles,0,44)=9.7323;MAT_ELEM(angles,1,44)=73.9549;
-		MAT_ELEM(angles,0,45)=81.7323;MAT_ELEM(angles,1,45)=73.9549;
-		MAT_ELEM(angles,0,46)=297.7323;MAT_ELEM(angles,1,46)=73.9549;
-		MAT_ELEM(angles,0,47)=36;MAT_ELEM(angles,1,47)=90;
-		MAT_ELEM(angles,0,48)=324;MAT_ELEM(angles,1,48)=90;
-		MAT_ELEM(angles,0,49)=229.6138;MAT_ELEM(angles,1,49)=43.647;
-		MAT_ELEM(angles,0,50)=157.6138;MAT_ELEM(angles,1,50)=43.647;
-		MAT_ELEM(angles,0,51)=324;MAT_ELEM(angles,1,51)=15.8587;
-		MAT_ELEM(angles,0,52)=36;MAT_ELEM(angles,1,52)=15.8587;
-		MAT_ELEM(angles,0,53)=341.533;MAT_ELEM(angles,1,53)=59.6208;
-		MAT_ELEM(angles,0,54)=306.467;MAT_ELEM(angles,1,54)=59.6208;
-		MAT_ELEM(angles,0,55)=333.5057;MAT_ELEM(angles,1,55)=76.5584;
-		MAT_ELEM(angles,0,56)=314.4943;MAT_ELEM(angles,1,56)=76.5584;
-		MAT_ELEM(angles,0,57)=53.533;MAT_ELEM(angles,1,57)=59.6208;
-		MAT_ELEM(angles,0,58)=26.4943;MAT_ELEM(angles,1,58)=76.5584;
-		MAT_ELEM(angles,0,59)=45.5057;MAT_ELEM(angles,1,59)=76.5584;
-		MAT_ELEM(angles,0,60)=197.533;MAT_ELEM(angles,1,60)=59.621;
-		MAT_ELEM(angles,0,61)=162.467;MAT_ELEM(angles,1,61)=59.621;
-		MAT_ELEM(angles,0,62)=180;MAT_ELEM(angles,1,62)=47.576;
-		MAT_ELEM(angles,0,63)=269.533;MAT_ELEM(angles,1,63)=59.621;
-		MAT_ELEM(angles,0,64)=252;MAT_ELEM(angles,1,64)=47.576;
-		MAT_ELEM(angles,0,65)=108;MAT_ELEM(angles,1,65)=47.576;
-		MAT_ELEM(angles,0,66)=324;MAT_ELEM(angles,1,66)=47.5762;
-		MAT_ELEM(angles,0,67)=36;MAT_ELEM(angles,1,67)=47.5762;
-		MAT_ELEM(angles,0,68)=18.467;MAT_ELEM(angles,1,68)=59.6208;
-		MAT_ELEM(angles,0,69)=170.4943;MAT_ELEM(angles,1,69)=76.558;
-		MAT_ELEM(angles,0,70)=117.5057;MAT_ELEM(angles,1,70)=76.558;
-		MAT_ELEM(angles,0,71)=189.5057;MAT_ELEM(angles,1,71)=76.558;
-		MAT_ELEM(angles,0,72)=242.4943;MAT_ELEM(angles,1,72)=76.558;
-		MAT_ELEM(angles,0,73)=261.5057;MAT_ELEM(angles,1,73)=76.558;
-		MAT_ELEM(angles,0,74)=98.4943;MAT_ELEM(angles,1,74)=76.558;
-		MAT_ELEM(angles,0,75)=234.467;MAT_ELEM(angles,1,75)=59.621;
-		MAT_ELEM(angles,0,76)=125.533;MAT_ELEM(angles,1,76)=59.621;
-		MAT_ELEM(angles,0,77)=180;MAT_ELEM(angles,1,77)=15.859;
-		MAT_ELEM(angles,0,78)=252;MAT_ELEM(angles,1,78)=15.859;
-		MAT_ELEM(angles,0,79)=90.467;MAT_ELEM(angles,1,79)=59.621;
-		MAT_ELEM(angles,0,80)=108;MAT_ELEM(angles,1,80)=15.859;
-		MAT_ELEM(angles,0,81)=0;MAT_ELEM(angles,1,81)=42.8321;
-		MAT_ELEM(angles,0,82)=72;MAT_ELEM(angles,1,82)=42.8321;
-		MAT_ELEM(angles,0,83)=288;MAT_ELEM(angles,1,83)=42.8321;
-		MAT_ELEM(angles,0,84)=4.7693;MAT_ELEM(angles,1,84)=81.9488;
-		MAT_ELEM(angles,0,85)=76.7693;MAT_ELEM(angles,1,85)=81.9488;
-		MAT_ELEM(angles,0,86)=292.7693;MAT_ELEM(angles,1,86)=81.9488;
-		MAT_ELEM(angles,0,87)=220.7693;MAT_ELEM(angles,1,87)=81.9488;
-		MAT_ELEM(angles,0,88)=148.7693;MAT_ELEM(angles,1,88)=81.9488;
-		MAT_ELEM(angles,0,89)=224.2677;MAT_ELEM(angles,1,89)=34.924;
-		MAT_ELEM(angles,0,90)=152.2677;MAT_ELEM(angles,1,90)=34.924;
-		MAT_ELEM(angles,0,91)=13.5146;MAT_ELEM(angles,1,91)=20.3172;
-		MAT_ELEM(angles,0,92)=85.5146;MAT_ELEM(angles,1,92)=20.3172;
-		MAT_ELEM(angles,0,93)=301.5146;MAT_ELEM(angles,1,93)=20.3172;
-		MAT_ELEM(angles,0,94)=346.1363;MAT_ELEM(angles,1,94)=66.7276;
-		MAT_ELEM(angles,0,95)=58.1363;MAT_ELEM(angles,1,95)=66.7276;
-		MAT_ELEM(angles,0,96)=274.1363;MAT_ELEM(angles,1,96)=66.7276;
-		MAT_ELEM(angles,0,97)=197.8362;MAT_ELEM(angles,1,97)=75.105;
-		MAT_ELEM(angles,0,98)=269.8362;MAT_ELEM(angles,1,98)=75.105;
-		MAT_ELEM(angles,0,99)=125.8362;MAT_ELEM(angles,1,99)=75.105;
+		MAT_ELEM(angles,0,0)=0;			MAT_ELEM(angles,1,0)=0;
+		MAT_ELEM(angles,0,1)=324;		MAT_ELEM(angles,1,1)=63.4349;
+		MAT_ELEM(angles,0,2)=36;		MAT_ELEM(angles,1,2)=63.4349;
+		MAT_ELEM(angles,0,3)=180;		MAT_ELEM(angles,1,3)=63.435;
+		MAT_ELEM(angles,0,4)=252;		MAT_ELEM(angles,1,4)=63.435;
+		MAT_ELEM(angles,0,5)=108;		MAT_ELEM(angles,1,5)=63.435;
+		MAT_ELEM(angles,0,6)=324;		MAT_ELEM(angles,1,6)=31.7175;
+		MAT_ELEM(angles,0,7)=36;		MAT_ELEM(angles,1,7)=31.7175;
+		MAT_ELEM(angles,0,8)=0;			MAT_ELEM(angles,1,8)=58.2825;
+		MAT_ELEM(angles,0,9)=288;		MAT_ELEM(angles,1,9)=58.2825;
+		MAT_ELEM(angles,0,10)=342;		MAT_ELEM(angles,1,10)=90;
+		MAT_ELEM(angles,0,11)=306;		MAT_ELEM(angles,1,11)=90;
+		MAT_ELEM(angles,0,12)=72;		MAT_ELEM(angles,1,12)=58.2825;
+		MAT_ELEM(angles,0,13)=18;		MAT_ELEM(angles,1,13)=90;
+		MAT_ELEM(angles,0,14)=54;		MAT_ELEM(angles,1,14)=90;
+		MAT_ELEM(angles,0,15)=90;		MAT_ELEM(angles,1,15)=90;
+		MAT_ELEM(angles,0,16)=216;		MAT_ELEM(angles,1,16)=58.282;
+		MAT_ELEM(angles,0,17)=144;		MAT_ELEM(angles,1,17)=58.282;
+		MAT_ELEM(angles,0,18)=180;		MAT_ELEM(angles,1,18)=31.718;
+		MAT_ELEM(angles,0,19)=252;		MAT_ELEM(angles,1,19)=31.718;
+		MAT_ELEM(angles,0,20)=108;		MAT_ELEM(angles,1,20)=31.718;
+		MAT_ELEM(angles,0,21)=346.3862;	MAT_ELEM(angles,1,21)=43.6469;
+		MAT_ELEM(angles,0,22)=58.3862;	MAT_ELEM(angles,1,22)=43.6469;
+		MAT_ELEM(angles,0,23)=274.3862;	MAT_ELEM(angles,1,23)=43.6469;
+		MAT_ELEM(angles,0,24)=0;		MAT_ELEM(angles,1,24)=90;
+		MAT_ELEM(angles,0,25)=72;		MAT_ELEM(angles,1,25)=90;
+		MAT_ELEM(angles,0,26)=288;		MAT_ELEM(angles,1,26)=90;
+		MAT_ELEM(angles,0,27)=225.7323;	MAT_ELEM(angles,1,27)=73.955;
+		MAT_ELEM(angles,0,28)=153.7323;	MAT_ELEM(angles,1,28)=73.955;
+		MAT_ELEM(angles,0,29)=216;		MAT_ELEM(angles,1,29)=26.565;
+		MAT_ELEM(angles,0,30)=144;		MAT_ELEM(angles,1,30)=26.565;
+		MAT_ELEM(angles,0,31)=0;		MAT_ELEM(angles,1,31)=26.5651;
+		MAT_ELEM(angles,0,32)=72;		MAT_ELEM(angles,1,32)=26.5651;
+		MAT_ELEM(angles,0,33)=288;		MAT_ELEM(angles,1,33)=26.5651;
+		MAT_ELEM(angles,0,34)=350.2677;	MAT_ELEM(angles,1,34)=73.9549;
+		MAT_ELEM(angles,0,35)=62.2677;	MAT_ELEM(angles,1,35)=73.9549;
+		MAT_ELEM(angles,0,36)=278.2677;	MAT_ELEM(angles,1,36)=73.9549;
+		MAT_ELEM(angles,0,37)=206.2677;	MAT_ELEM(angles,1,37)=73.955;
+		MAT_ELEM(angles,0,38)=134.2677;	MAT_ELEM(angles,1,38)=73.955;
+		MAT_ELEM(angles,0,39)=202.3862;	MAT_ELEM(angles,1,39)=43.647;
+		MAT_ELEM(angles,0,40)=130.3862;	MAT_ELEM(angles,1,40)=43.647;
+		MAT_ELEM(angles,0,41)=13.6138;	MAT_ELEM(angles,1,41)=43.6469;
+		MAT_ELEM(angles,0,42)=85.6138;	MAT_ELEM(angles,1,42)=43.6469;
+		MAT_ELEM(angles,0,43)=301.6138;	MAT_ELEM(angles,1,43)=43.6469;
+		MAT_ELEM(angles,0,44)=9.7323;	MAT_ELEM(angles,1,44)=73.9549;
+		MAT_ELEM(angles,0,45)=81.7323;	MAT_ELEM(angles,1,45)=73.9549;
+		MAT_ELEM(angles,0,46)=297.7323;	MAT_ELEM(angles,1,46)=73.9549;
+		MAT_ELEM(angles,0,47)=36;		MAT_ELEM(angles,1,47)=90;
+		MAT_ELEM(angles,0,48)=324;		MAT_ELEM(angles,1,48)=90;
+		MAT_ELEM(angles,0,49)=229.6138;	MAT_ELEM(angles,1,49)=43.647;
+		MAT_ELEM(angles,0,50)=157.6138;	MAT_ELEM(angles,1,50)=43.647;
+		MAT_ELEM(angles,0,51)=324;		MAT_ELEM(angles,1,51)=15.8587;
+		MAT_ELEM(angles,0,52)=36;		MAT_ELEM(angles,1,52)=15.8587;
+		MAT_ELEM(angles,0,53)=341.533;	MAT_ELEM(angles,1,53)=59.6208;
+		MAT_ELEM(angles,0,54)=306.467;	MAT_ELEM(angles,1,54)=59.6208;
+		MAT_ELEM(angles,0,55)=333.5057;	MAT_ELEM(angles,1,55)=76.5584;
+		MAT_ELEM(angles,0,56)=314.4943;	MAT_ELEM(angles,1,56)=76.5584;
+		MAT_ELEM(angles,0,57)=53.533;	MAT_ELEM(angles,1,57)=59.6208;
+		MAT_ELEM(angles,0,58)=26.4943;	MAT_ELEM(angles,1,58)=76.5584;
+		MAT_ELEM(angles,0,59)=45.5057;	MAT_ELEM(angles,1,59)=76.5584;
+		MAT_ELEM(angles,0,60)=197.533;	MAT_ELEM(angles,1,60)=59.621;
+		MAT_ELEM(angles,0,61)=162.467;	MAT_ELEM(angles,1,61)=59.621;
+		MAT_ELEM(angles,0,62)=180;		MAT_ELEM(angles,1,62)=47.576;
+		MAT_ELEM(angles,0,63)=269.533;	MAT_ELEM(angles,1,63)=59.621;
+		MAT_ELEM(angles,0,64)=252;		MAT_ELEM(angles,1,64)=47.576;
+		MAT_ELEM(angles,0,65)=108;		MAT_ELEM(angles,1,65)=47.576;
+		MAT_ELEM(angles,0,66)=324;		MAT_ELEM(angles,1,66)=47.5762;
+		MAT_ELEM(angles,0,67)=36;		MAT_ELEM(angles,1,67)=47.5762;
+		MAT_ELEM(angles,0,68)=18.467;	MAT_ELEM(angles,1,68)=59.6208;
+		MAT_ELEM(angles,0,69)=170.4943;	MAT_ELEM(angles,1,69)=76.558;
+		MAT_ELEM(angles,0,70)=117.5057;	MAT_ELEM(angles,1,70)=76.558;
+		MAT_ELEM(angles,0,71)=189.5057;	MAT_ELEM(angles,1,71)=76.558;
+		MAT_ELEM(angles,0,72)=242.4943;	MAT_ELEM(angles,1,72)=76.558;
+		MAT_ELEM(angles,0,73)=261.5057;	MAT_ELEM(angles,1,73)=76.558;
+		MAT_ELEM(angles,0,74)=98.4943;	MAT_ELEM(angles,1,74)=76.558;
+		MAT_ELEM(angles,0,75)=234.467;	MAT_ELEM(angles,1,75)=59.621;
+		MAT_ELEM(angles,0,76)=125.533;	MAT_ELEM(angles,1,76)=59.621;
+		MAT_ELEM(angles,0,77)=180;		MAT_ELEM(angles,1,77)=15.859;
+		MAT_ELEM(angles,0,78)=252;		MAT_ELEM(angles,1,78)=15.859;
+		MAT_ELEM(angles,0,79)=90.467;	MAT_ELEM(angles,1,79)=59.621;
+		MAT_ELEM(angles,0,80)=108;		MAT_ELEM(angles,1,80)=15.859;
+		MAT_ELEM(angles,0,81)=0;		MAT_ELEM(angles,1,81)=42.8321;
+		MAT_ELEM(angles,0,82)=72;		MAT_ELEM(angles,1,82)=42.8321;
+		MAT_ELEM(angles,0,83)=288;		MAT_ELEM(angles,1,83)=42.8321;
+		MAT_ELEM(angles,0,84)=4.7693;	MAT_ELEM(angles,1,84)=81.9488;
+		MAT_ELEM(angles,0,85)=76.7693;	MAT_ELEM(angles,1,85)=81.9488;
+		MAT_ELEM(angles,0,86)=292.7693;	MAT_ELEM(angles,1,86)=81.9488;
+		MAT_ELEM(angles,0,87)=220.7693;	MAT_ELEM(angles,1,87)=81.9488;
+		MAT_ELEM(angles,0,88)=148.7693;	MAT_ELEM(angles,1,88)=81.9488;
+		MAT_ELEM(angles,0,89)=224.2677;	MAT_ELEM(angles,1,89)=34.924;
+		MAT_ELEM(angles,0,90)=152.2677;	MAT_ELEM(angles,1,90)=34.924;
+		MAT_ELEM(angles,0,91)=13.5146;	MAT_ELEM(angles,1,91)=20.3172;
+		MAT_ELEM(angles,0,92)=85.5146;	MAT_ELEM(angles,1,92)=20.3172;
+		MAT_ELEM(angles,0,93)=301.5146;	MAT_ELEM(angles,1,93)=20.3172;
+		MAT_ELEM(angles,0,94)=346.1363;	MAT_ELEM(angles,1,94)=66.7276;
+		MAT_ELEM(angles,0,95)=58.1363;	MAT_ELEM(angles,1,95)=66.7276;
+		MAT_ELEM(angles,0,96)=274.1363;	MAT_ELEM(angles,1,96)=66.7276;
+		MAT_ELEM(angles,0,97)=197.8362;	MAT_ELEM(angles,1,97)=75.105;
+		MAT_ELEM(angles,0,98)=269.8362;	MAT_ELEM(angles,1,98)=75.105;
+		MAT_ELEM(angles,0,99)=125.8362;	MAT_ELEM(angles,1,99)=75.105;
 		MAT_ELEM(angles,0,100)=199.6899;MAT_ELEM(angles,1,100)=51.609;
 		MAT_ELEM(angles,0,101)=127.6899;MAT_ELEM(angles,1,101)=51.609;
 		MAT_ELEM(angles,0,102)=334.8124;MAT_ELEM(angles,1,102)=45.0621;
-		MAT_ELEM(angles,0,103)=46.8124;MAT_ELEM(angles,1,103)=45.0621;
+		MAT_ELEM(angles,0,103)=46.8124;	MAT_ELEM(angles,1,103)=45.0621;
 		MAT_ELEM(angles,0,104)=175.3133;MAT_ELEM(angles,1,104)=83.2562;
 		MAT_ELEM(angles,0,105)=247.3133;MAT_ELEM(angles,1,105)=83.2562;
 		MAT_ELEM(angles,0,106)=103.3133;MAT_ELEM(angles,1,106)=83.2562;
@@ -626,71 +648,71 @@ void ProgFSO::generateDirections(Matrix2D<double> &angles, bool alot)
 		MAT_ELEM(angles,0,108)=157.8637;MAT_ELEM(angles,1,108)=66.728;
 		MAT_ELEM(angles,0,109)=202.4854;MAT_ELEM(angles,1,109)=20.317;
 		MAT_ELEM(angles,0,110)=130.4854;MAT_ELEM(angles,1,110)=20.317;
-		MAT_ELEM(angles,0,111)=16.3101;MAT_ELEM(angles,1,111)=51.6091;
-		MAT_ELEM(angles,0,112)=88.3101;MAT_ELEM(angles,1,112)=51.6091;
+		MAT_ELEM(angles,0,111)=16.3101;	MAT_ELEM(angles,1,111)=51.6091;
+		MAT_ELEM(angles,0,112)=88.3101;	MAT_ELEM(angles,1,112)=51.6091;
 		MAT_ELEM(angles,0,113)=304.3101;MAT_ELEM(angles,1,113)=51.6091;
-		MAT_ELEM(angles,0,114)=18.1638;MAT_ELEM(angles,1,114)=75.1046;
+		MAT_ELEM(angles,0,114)=18.1638;	MAT_ELEM(angles,1,114)=75.1046;
 		MAT_ELEM(angles,0,115)=306.1638;MAT_ELEM(angles,1,115)=75.1046;
-		MAT_ELEM(angles,0,116)=40.6867;MAT_ELEM(angles,1,116)=83.2562;
+		MAT_ELEM(angles,0,116)=40.6867;	MAT_ELEM(angles,1,116)=83.2562;
 		MAT_ELEM(angles,0,117)=328.6867;MAT_ELEM(angles,1,117)=83.2562;
 		MAT_ELEM(angles,0,118)=241.1876;MAT_ELEM(angles,1,118)=45.062;
-		MAT_ELEM(angles,0,119)=97.1876;MAT_ELEM(angles,1,119)=45.062;
+		MAT_ELEM(angles,0,119)=97.1876;	MAT_ELEM(angles,1,119)=45.062;
 		MAT_ELEM(angles,0,120)=169.1876;MAT_ELEM(angles,1,120)=45.062;
 		MAT_ELEM(angles,0,121)=351.7323;MAT_ELEM(angles,1,121)=34.9243;
-		MAT_ELEM(angles,0,122)=63.7323;MAT_ELEM(angles,1,122)=34.9243;
+		MAT_ELEM(angles,0,122)=63.7323;	MAT_ELEM(angles,1,122)=34.9243;
 		MAT_ELEM(angles,0,123)=279.7323;MAT_ELEM(angles,1,123)=34.9243;
 		MAT_ELEM(angles,0,124)=355.2307;MAT_ELEM(angles,1,124)=81.9488;
-		MAT_ELEM(angles,0,125)=67.2307;MAT_ELEM(angles,1,125)=81.9488;
+		MAT_ELEM(angles,0,125)=67.2307;	MAT_ELEM(angles,1,125)=81.9488;
 		MAT_ELEM(angles,0,126)=283.2307;MAT_ELEM(angles,1,126)=81.9488;
-		MAT_ELEM(angles,0,127)=216;MAT_ELEM(angles,1,127)=73.733;
-		MAT_ELEM(angles,0,128)=144;MAT_ELEM(angles,1,128)=73.733;
+		MAT_ELEM(angles,0,127)=216;		MAT_ELEM(angles,1,127)=73.733;
+		MAT_ELEM(angles,0,128)=144;		MAT_ELEM(angles,1,128)=73.733;
 		MAT_ELEM(angles,0,129)=207.7323;MAT_ELEM(angles,1,129)=34.924;
 		MAT_ELEM(angles,0,130)=135.7323;MAT_ELEM(angles,1,130)=34.924;
 		MAT_ELEM(angles,0,131)=346.4854;MAT_ELEM(angles,1,131)=20.3172;
-		MAT_ELEM(angles,0,132)=58.4854;MAT_ELEM(angles,1,132)=20.3172;
+		MAT_ELEM(angles,0,132)=58.4854;	MAT_ELEM(angles,1,132)=20.3172;
 		MAT_ELEM(angles,0,133)=274.4854;MAT_ELEM(angles,1,133)=20.3172;
 		MAT_ELEM(angles,0,134)=341.8362;MAT_ELEM(angles,1,134)=75.1046;
-		MAT_ELEM(angles,0,135)=53.8362;MAT_ELEM(angles,1,135)=75.1046;
+		MAT_ELEM(angles,0,135)=53.8362;	MAT_ELEM(angles,1,135)=75.1046;
 		MAT_ELEM(angles,0,136)=202.1363;MAT_ELEM(angles,1,136)=66.728;
 		MAT_ELEM(angles,0,137)=130.1363;MAT_ELEM(angles,1,137)=66.728;
 		MAT_ELEM(angles,0,138)=190.8124;MAT_ELEM(angles,1,138)=45.062;
 		MAT_ELEM(angles,0,139)=262.8124;MAT_ELEM(angles,1,139)=45.062;
 		MAT_ELEM(angles,0,140)=118.8124;MAT_ELEM(angles,1,140)=45.062;
 		MAT_ELEM(angles,0,141)=343.6899;MAT_ELEM(angles,1,141)=51.6091;
-		MAT_ELEM(angles,0,142)=55.6899;MAT_ELEM(angles,1,142)=51.6091;
+		MAT_ELEM(angles,0,142)=55.6899;	MAT_ELEM(angles,1,142)=51.6091;
 		MAT_ELEM(angles,0,143)=271.6899;MAT_ELEM(angles,1,143)=51.6091;
 		MAT_ELEM(angles,0,144)=184.6867;MAT_ELEM(angles,1,144)=83.2562;
 		MAT_ELEM(angles,0,145)=256.6867;MAT_ELEM(angles,1,145)=83.2562;
 		MAT_ELEM(angles,0,146)=112.6867;MAT_ELEM(angles,1,146)=83.2562;
 		MAT_ELEM(angles,0,147)=234.1638;MAT_ELEM(angles,1,147)=75.105;
-		MAT_ELEM(angles,0,148)=90.1638;MAT_ELEM(angles,1,148)=75.105;
+		MAT_ELEM(angles,0,148)=90.1638;	MAT_ELEM(angles,1,148)=75.105;
 		MAT_ELEM(angles,0,149)=162.1638;MAT_ELEM(angles,1,149)=75.105;
 		MAT_ELEM(angles,0,150)=229.5146;MAT_ELEM(angles,1,150)=20.317;
 		MAT_ELEM(angles,0,151)=157.5146;MAT_ELEM(angles,1,151)=20.317;
-		MAT_ELEM(angles,0,152)=25.1876;MAT_ELEM(angles,1,152)=45.0621;
+		MAT_ELEM(angles,0,152)=25.1876;	MAT_ELEM(angles,1,152)=45.0621;
 		MAT_ELEM(angles,0,153)=313.1876;MAT_ELEM(angles,1,153)=45.0621;
-		MAT_ELEM(angles,0,154)=13.8637;MAT_ELEM(angles,1,154)=66.7276;
-		MAT_ELEM(angles,0,155)=85.8637;MAT_ELEM(angles,1,155)=66.7276;
+		MAT_ELEM(angles,0,154)=13.8637;	MAT_ELEM(angles,1,154)=66.7276;
+		MAT_ELEM(angles,0,155)=85.8637;	MAT_ELEM(angles,1,155)=66.7276;
 		MAT_ELEM(angles,0,156)=301.8637;MAT_ELEM(angles,1,156)=66.7276;
-		MAT_ELEM(angles,0,157)=31.3133;MAT_ELEM(angles,1,157)=83.2562;
+		MAT_ELEM(angles,0,157)=31.3133;	MAT_ELEM(angles,1,157)=83.2562;
 		MAT_ELEM(angles,0,158)=319.3133;MAT_ELEM(angles,1,158)=83.2562;
 		MAT_ELEM(angles,0,159)=232.3101;MAT_ELEM(angles,1,159)=51.609;
 		MAT_ELEM(angles,0,160)=160.3101;MAT_ELEM(angles,1,160)=51.609;
-		MAT_ELEM(angles,0,161)=8.2677;MAT_ELEM(angles,1,161)=34.9243;
-		MAT_ELEM(angles,0,162)=80.2677;MAT_ELEM(angles,1,162)=34.9243;
+		MAT_ELEM(angles,0,161)=8.2677;	MAT_ELEM(angles,1,161)=34.9243;
+		MAT_ELEM(angles,0,162)=80.2677;	MAT_ELEM(angles,1,162)=34.9243;
 		MAT_ELEM(angles,0,163)=296.2677;MAT_ELEM(angles,1,163)=34.9243;
-		MAT_ELEM(angles,0,164)=0;MAT_ELEM(angles,1,164)=73.733;
-		MAT_ELEM(angles,0,165)=72;MAT_ELEM(angles,1,165)=73.733;
-		MAT_ELEM(angles,0,166)=288;MAT_ELEM(angles,1,166)=73.733;
+		MAT_ELEM(angles,0,164)=0;		MAT_ELEM(angles,1,164)=73.733;
+		MAT_ELEM(angles,0,165)=72;		MAT_ELEM(angles,1,165)=73.733;
+		MAT_ELEM(angles,0,166)=288;		MAT_ELEM(angles,1,166)=73.733;
 		MAT_ELEM(angles,0,167)=211.2307;MAT_ELEM(angles,1,167)=81.9488;
 		MAT_ELEM(angles,0,168)=139.2307;MAT_ELEM(angles,1,168)=81.9488;
-		MAT_ELEM(angles,0,169)=216;MAT_ELEM(angles,1,169)=42.832;
-		MAT_ELEM(angles,0,170)=144;MAT_ELEM(angles,1,170)=42.832;
-		MAT_ELEM(angles,0,171)=0;MAT_ELEM(angles,1,171)=12.9432;
-		MAT_ELEM(angles,0,172)=72;MAT_ELEM(angles,1,172)=12.9432;
-		MAT_ELEM(angles,0,173)=288;MAT_ELEM(angles,1,173)=12.9432;
+		MAT_ELEM(angles,0,169)=216;		MAT_ELEM(angles,1,169)=42.832;
+		MAT_ELEM(angles,0,170)=144;		MAT_ELEM(angles,1,170)=42.832;
+		MAT_ELEM(angles,0,171)=0;		MAT_ELEM(angles,1,171)=12.9432;
+		MAT_ELEM(angles,0,172)=72;		MAT_ELEM(angles,1,172)=12.9432;
+		MAT_ELEM(angles,0,173)=288;		MAT_ELEM(angles,1,173)=12.9432;
 		MAT_ELEM(angles,0,174)=337.2786;MAT_ELEM(angles,1,174)=68.041;
-		MAT_ELEM(angles,0,175)=49.2786;MAT_ELEM(angles,1,175)=68.041;
+		MAT_ELEM(angles,0,175)=49.2786; MAT_ELEM(angles,1,175)=68.041;
 		MAT_ELEM(angles,0,176)=193.2786;MAT_ELEM(angles,1,176)=68.041;
 		MAT_ELEM(angles,0,177)=265.2786;MAT_ELEM(angles,1,177)=68.041;
 		MAT_ELEM(angles,0,178)=121.2786;MAT_ELEM(angles,1,178)=68.041;
@@ -698,132 +720,132 @@ void ProgFSO::generateDirections(Matrix2D<double> &angles, bool alot)
 		MAT_ELEM(angles,0,180)=261.4537;MAT_ELEM(angles,1,180)=53.278;
 		MAT_ELEM(angles,0,181)=117.4537;MAT_ELEM(angles,1,181)=53.278;
 		MAT_ELEM(angles,0,182)=333.4537;MAT_ELEM(angles,1,182)=53.2783;
-		MAT_ELEM(angles,0,183)=45.4537;MAT_ELEM(angles,1,183)=53.2783;
-		MAT_ELEM(angles,0,184)=180;MAT_ELEM(angles,1,184)=76.378;
-		MAT_ELEM(angles,0,185)=252;MAT_ELEM(angles,1,185)=76.378;
-		MAT_ELEM(angles,0,186)=108;MAT_ELEM(angles,1,186)=76.378;
+		MAT_ELEM(angles,0,183)=45.4537; MAT_ELEM(angles,1,183)=53.2783;
+		MAT_ELEM(angles,0,184)=180;		MAT_ELEM(angles,1,184)=76.378;
+		MAT_ELEM(angles,0,185)=252;		MAT_ELEM(angles,1,185)=76.378;
+		MAT_ELEM(angles,0,186)=108;		MAT_ELEM(angles,1,186)=76.378;
 		MAT_ELEM(angles,0,187)=238.7214;MAT_ELEM(angles,1,187)=68.041;
-		MAT_ELEM(angles,0,188)=94.7214;MAT_ELEM(angles,1,188)=68.041;
+		MAT_ELEM(angles,0,188)=94.7214;	MAT_ELEM(angles,1,188)=68.041;
 		MAT_ELEM(angles,0,189)=166.7214;MAT_ELEM(angles,1,189)=68.041;
-		MAT_ELEM(angles,0,190)=216;MAT_ELEM(angles,1,190)=12.943;
-		MAT_ELEM(angles,0,191)=144;MAT_ELEM(angles,1,191)=12.943;
-		MAT_ELEM(angles,0,192)=26.5463;MAT_ELEM(angles,1,192)=53.2783;
+		MAT_ELEM(angles,0,190)=216;		MAT_ELEM(angles,1,190)=12.943;
+		MAT_ELEM(angles,0,191)=144;		MAT_ELEM(angles,1,191)=12.943;
+		MAT_ELEM(angles,0,192)=26.5463;	MAT_ELEM(angles,1,192)=53.2783;
 		MAT_ELEM(angles,0,193)=314.5463;MAT_ELEM(angles,1,193)=53.2783;
-		MAT_ELEM(angles,0,194)=22.7214;MAT_ELEM(angles,1,194)=68.041;
+		MAT_ELEM(angles,0,194)=22.7214;	MAT_ELEM(angles,1,194)=68.041;
 		MAT_ELEM(angles,0,195)=310.7214;MAT_ELEM(angles,1,195)=68.041;
-		MAT_ELEM(angles,0,196)=36;MAT_ELEM(angles,1,196)=76.3782;
-		MAT_ELEM(angles,0,197)=324;MAT_ELEM(angles,1,197)=76.3782;
+		MAT_ELEM(angles,0,196)=36;		MAT_ELEM(angles,1,196)=76.3782;
+		MAT_ELEM(angles,0,197)=324;		MAT_ELEM(angles,1,197)=76.3782;
 		MAT_ELEM(angles,0,198)=242.5463;MAT_ELEM(angles,1,198)=53.278;
-		MAT_ELEM(angles,0,199)=98.5463;MAT_ELEM(angles,1,199)=53.278;
+		MAT_ELEM(angles,0,199)=98.5463;	MAT_ELEM(angles,1,199)=53.278;
 		MAT_ELEM(angles,0,200)=170.5463;MAT_ELEM(angles,1,200)=53.278;
 		MAT_ELEM(angles,0,201)=336.7264;MAT_ELEM(angles,1,201)=37.1611;
-		MAT_ELEM(angles,0,202)=48.7264;MAT_ELEM(angles,1,202)=37.1611;
-		MAT_ELEM(angles,0,203)=351;MAT_ELEM(angles,1,203)=90;
-		MAT_ELEM(angles,0,204)=63;MAT_ELEM(angles,1,204)=90;
-		MAT_ELEM(angles,0,205)=279;MAT_ELEM(angles,1,205)=90;
+		MAT_ELEM(angles,0,202)=48.7264;	MAT_ELEM(angles,1,202)=37.1611;
+		MAT_ELEM(angles,0,203)=351;		MAT_ELEM(angles,1,203)=90;
+		MAT_ELEM(angles,0,204)=63;		MAT_ELEM(angles,1,204)=90;
+		MAT_ELEM(angles,0,205)=279;		MAT_ELEM(angles,1,205)=90;
 		MAT_ELEM(angles,0,206)=221.1634;MAT_ELEM(angles,1,206)=66.042;
 		MAT_ELEM(angles,0,207)=149.1634;MAT_ELEM(angles,1,207)=66.042;
-		MAT_ELEM(angles,0,208)=196.498;MAT_ELEM(angles,1,208)=27.943;
-		MAT_ELEM(angles,0,209)=268.498;MAT_ELEM(angles,1,209)=27.943;
-		MAT_ELEM(angles,0,210)=124.498;MAT_ELEM(angles,1,210)=27.943;
-		MAT_ELEM(angles,0,211)=340.498;MAT_ELEM(angles,1,211)=27.9429;
-		MAT_ELEM(angles,0,212)=52.498;MAT_ELEM(angles,1,212)=27.9429;
+		MAT_ELEM(angles,0,208)=196.498;	MAT_ELEM(angles,1,208)=27.943;
+		MAT_ELEM(angles,0,209)=268.498;	MAT_ELEM(angles,1,209)=27.943;
+		MAT_ELEM(angles,0,210)=124.498;	MAT_ELEM(angles,1,210)=27.943;
+		MAT_ELEM(angles,0,211)=340.498;	MAT_ELEM(angles,1,211)=27.9429;
+		MAT_ELEM(angles,0,212)=52.498;	MAT_ELEM(angles,1,212)=27.9429;
 		MAT_ELEM(angles,0,213)=346.0516;MAT_ELEM(angles,1,213)=81.9568;
-		MAT_ELEM(angles,0,214)=58.0516;MAT_ELEM(angles,1,214)=81.9568;
+		MAT_ELEM(angles,0,214)=58.0516;	MAT_ELEM(angles,1,214)=81.9568;
 		MAT_ELEM(angles,0,215)=274.0516;MAT_ELEM(angles,1,215)=81.9568;
 		MAT_ELEM(angles,0,216)=210.8366;MAT_ELEM(angles,1,216)=66.042;
 		MAT_ELEM(angles,0,217)=138.8366;MAT_ELEM(angles,1,217)=66.042;
 		MAT_ELEM(angles,0,218)=192.7264;MAT_ELEM(angles,1,218)=37.161;
 		MAT_ELEM(angles,0,219)=264.7264;MAT_ELEM(angles,1,219)=37.161;
 		MAT_ELEM(angles,0,220)=120.7264;MAT_ELEM(angles,1,220)=37.161;
-		MAT_ELEM(angles,0,221)=6.0948;MAT_ELEM(angles,1,221)=50.7685;
-		MAT_ELEM(angles,0,222)=78.0948;MAT_ELEM(angles,1,222)=50.7685;
+		MAT_ELEM(angles,0,221)=6.0948;	MAT_ELEM(angles,1,221)=50.7685;
+		MAT_ELEM(angles,0,222)=78.0948;	MAT_ELEM(angles,1,222)=50.7685;
 		MAT_ELEM(angles,0,223)=294.0948;MAT_ELEM(angles,1,223)=50.7685;
-		MAT_ELEM(angles,0,224)=13.9484;MAT_ELEM(angles,1,224)=81.9568;
-		MAT_ELEM(angles,0,225)=85.9484;MAT_ELEM(angles,1,225)=81.9568;
+		MAT_ELEM(angles,0,224)=13.9484;	MAT_ELEM(angles,1,224)=81.9568;
+		MAT_ELEM(angles,0,225)=85.9484;	MAT_ELEM(angles,1,225)=81.9568;
 		MAT_ELEM(angles,0,226)=301.9484;MAT_ELEM(angles,1,226)=81.9568;
-		MAT_ELEM(angles,0,227)=45;MAT_ELEM(angles,1,227)=90;
-		MAT_ELEM(angles,0,228)=333;MAT_ELEM(angles,1,228)=90;
+		MAT_ELEM(angles,0,227)=45;		MAT_ELEM(angles,1,227)=90;
+		MAT_ELEM(angles,0,228)=333;		MAT_ELEM(angles,1,228)=90;
 		MAT_ELEM(angles,0,229)=239.2736;MAT_ELEM(angles,1,229)=37.161;
-		MAT_ELEM(angles,0,230)=95.2736;MAT_ELEM(angles,1,230)=37.161;
+		MAT_ELEM(angles,0,230)=95.2736;	MAT_ELEM(angles,1,230)=37.161;
 		MAT_ELEM(angles,0,231)=167.2736;MAT_ELEM(angles,1,231)=37.161;
-		MAT_ELEM(angles,0,232)=324;MAT_ELEM(angles,1,232)=7.9294;
-		MAT_ELEM(angles,0,233)=36;MAT_ELEM(angles,1,233)=7.9294;
+		MAT_ELEM(angles,0,232)=324;		MAT_ELEM(angles,1,232)=7.9294;
+		MAT_ELEM(angles,0,233)=36;		MAT_ELEM(angles,1,233)=7.9294;
 		MAT_ELEM(angles,0,234)=332.6069;MAT_ELEM(angles,1,234)=61.2449;
 		MAT_ELEM(angles,0,235)=315.3931;MAT_ELEM(angles,1,235)=61.2449;
 		MAT_ELEM(angles,0,236)=328.9523;MAT_ELEM(angles,1,236)=69.9333;
 		MAT_ELEM(angles,0,237)=319.0477;MAT_ELEM(angles,1,237)=69.9333;
-		MAT_ELEM(angles,0,238)=44.6069;MAT_ELEM(angles,1,238)=61.2449;
-		MAT_ELEM(angles,0,239)=31.0477;MAT_ELEM(angles,1,239)=69.9333;
-		MAT_ELEM(angles,0,240)=40.9523;MAT_ELEM(angles,1,240)=69.9333;
+		MAT_ELEM(angles,0,238)=44.6069;	MAT_ELEM(angles,1,238)=61.2449;
+		MAT_ELEM(angles,0,239)=31.0477;	MAT_ELEM(angles,1,239)=69.9333;
+		MAT_ELEM(angles,0,240)=40.9523;	MAT_ELEM(angles,1,240)=69.9333;
 		MAT_ELEM(angles,0,241)=188.6069;MAT_ELEM(angles,1,241)=61.245;
 		MAT_ELEM(angles,0,242)=171.3931;MAT_ELEM(angles,1,242)=61.245;
-		MAT_ELEM(angles,0,243)=180;MAT_ELEM(angles,1,243)=55.506;
+		MAT_ELEM(angles,0,243)=180;		MAT_ELEM(angles,1,243)=55.506;
 		MAT_ELEM(angles,0,244)=260.6069;MAT_ELEM(angles,1,244)=61.245;
-		MAT_ELEM(angles,0,245)=252;MAT_ELEM(angles,1,245)=55.506;
-		MAT_ELEM(angles,0,246)=108;MAT_ELEM(angles,1,246)=55.506;
-		MAT_ELEM(angles,0,247)=324;MAT_ELEM(angles,1,247)=39.6468;
-		MAT_ELEM(angles,0,248)=36;MAT_ELEM(angles,1,248)=39.6468;
-		MAT_ELEM(angles,0,249)=9.299;MAT_ELEM(angles,1,249)=58.6205;
-		MAT_ELEM(angles,0,250)=278.701;MAT_ELEM(angles,1,250)=58.6205;
+		MAT_ELEM(angles,0,245)=252;		MAT_ELEM(angles,1,245)=55.506;
+		MAT_ELEM(angles,0,246)=108;		MAT_ELEM(angles,1,246)=55.506;
+		MAT_ELEM(angles,0,247)=324;		MAT_ELEM(angles,1,247)=39.6468;
+		MAT_ELEM(angles,0,248)=36;		MAT_ELEM(angles,1,248)=39.6468;
+		MAT_ELEM(angles,0,249)=9.299;	MAT_ELEM(angles,1,249)=58.6205;
+		MAT_ELEM(angles,0,250)=278.701;	MAT_ELEM(angles,1,250)=58.6205;
 		MAT_ELEM(angles,0,251)=166.1881;MAT_ELEM(angles,1,251)=83.2609;
 		MAT_ELEM(angles,0,252)=121.8119;MAT_ELEM(angles,1,252)=83.2609;
-		MAT_ELEM(angles,0,253)=81.299;MAT_ELEM(angles,1,253)=58.6205;
+		MAT_ELEM(angles,0,253)=81.299;	MAT_ELEM(angles,1,253)=58.6205;
 		MAT_ELEM(angles,0,254)=193.8119;MAT_ELEM(angles,1,254)=83.2609;
 		MAT_ELEM(angles,0,255)=238.1881;MAT_ELEM(angles,1,255)=83.2609;
 		MAT_ELEM(angles,0,256)=265.8119;MAT_ELEM(angles,1,256)=83.2609;
-		MAT_ELEM(angles,0,257)=94.1881;MAT_ELEM(angles,1,257)=83.2609;
-		MAT_ELEM(angles,0,258)=225.299;MAT_ELEM(angles,1,258)=58.621;
-		MAT_ELEM(angles,0,259)=134.701;MAT_ELEM(angles,1,259)=58.621;
-		MAT_ELEM(angles,0,260)=180;MAT_ELEM(angles,1,260)=23.788;
-		MAT_ELEM(angles,0,261)=252;MAT_ELEM(angles,1,261)=23.788;
-		MAT_ELEM(angles,0,262)=108;MAT_ELEM(angles,1,262)=23.788;
+		MAT_ELEM(angles,0,257)=94.1881;	MAT_ELEM(angles,1,257)=83.2609;
+		MAT_ELEM(angles,0,258)=225.299;	MAT_ELEM(angles,1,258)=58.621;
+		MAT_ELEM(angles,0,259)=134.701;	MAT_ELEM(angles,1,259)=58.621;
+		MAT_ELEM(angles,0,260)=180;		MAT_ELEM(angles,1,260)=23.788;
+		MAT_ELEM(angles,0,261)=252;		MAT_ELEM(angles,1,261)=23.788;
+		MAT_ELEM(angles,0,262)=108;		MAT_ELEM(angles,1,262)=23.788;
 		MAT_ELEM(angles,0,263)=353.9052;MAT_ELEM(angles,1,263)=50.7685;
-		MAT_ELEM(angles,0,264)=65.9052;MAT_ELEM(angles,1,264)=50.7685;
+		MAT_ELEM(angles,0,264)=65.9052; MAT_ELEM(angles,1,264)=50.7685;
 		MAT_ELEM(angles,0,265)=281.9052;MAT_ELEM(angles,1,265)=50.7685;
-		MAT_ELEM(angles,0,266)=9;MAT_ELEM(angles,1,266)=90;
-		MAT_ELEM(angles,0,267)=81;MAT_ELEM(angles,1,267)=90;
-		MAT_ELEM(angles,0,268)=297;MAT_ELEM(angles,1,268)=90;
+		MAT_ELEM(angles,0,266)=9;		MAT_ELEM(angles,1,266)=90;
+		MAT_ELEM(angles,0,267)=81;		MAT_ELEM(angles,1,267)=90;
+		MAT_ELEM(angles,0,268)=297;		MAT_ELEM(angles,1,268)=90;
 		MAT_ELEM(angles,0,269)=229.9484;MAT_ELEM(angles,1,269)=81.9568;
 		MAT_ELEM(angles,0,270)=157.9484;MAT_ELEM(angles,1,270)=81.9568;
-		MAT_ELEM(angles,0,271)=235.502;MAT_ELEM(angles,1,271)=27.943;
-		MAT_ELEM(angles,0,272)=91.502;MAT_ELEM(angles,1,272)=27.943;
-		MAT_ELEM(angles,0,273)=163.502;MAT_ELEM(angles,1,273)=27.943;
-		MAT_ELEM(angles,0,274)=19.502;MAT_ELEM(angles,1,274)=27.9429;
-		MAT_ELEM(angles,0,275)=307.502;MAT_ELEM(angles,1,275)=27.9429;
+		MAT_ELEM(angles,0,271)=235.502;	MAT_ELEM(angles,1,271)=27.943;
+		MAT_ELEM(angles,0,272)=91.502;	MAT_ELEM(angles,1,272)=27.943;
+		MAT_ELEM(angles,0,273)=163.502;	MAT_ELEM(angles,1,273)=27.943;
+		MAT_ELEM(angles,0,274)=19.502;	MAT_ELEM(angles,1,274)=27.9429;
+		MAT_ELEM(angles,0,275)=307.502;	MAT_ELEM(angles,1,275)=27.9429;
 		MAT_ELEM(angles,0,276)=354.8366;MAT_ELEM(angles,1,276)=66.0423;
-		MAT_ELEM(angles,0,277)=66.8366;MAT_ELEM(angles,1,277)=66.0423;
+		MAT_ELEM(angles,0,277)=66.8366;	MAT_ELEM(angles,1,277)=66.0423;
 		MAT_ELEM(angles,0,278)=282.8366;MAT_ELEM(angles,1,278)=66.0423;
 		MAT_ELEM(angles,0,279)=202.0516;MAT_ELEM(angles,1,279)=81.9568;
 		MAT_ELEM(angles,0,280)=130.0516;MAT_ELEM(angles,1,280)=81.9568;
 		MAT_ELEM(angles,0,281)=209.9052;MAT_ELEM(angles,1,281)=50.768;
 		MAT_ELEM(angles,0,282)=137.9052;MAT_ELEM(angles,1,282)=50.768;
-		MAT_ELEM(angles,0,283)=23.2736;MAT_ELEM(angles,1,283)=37.1611;
+		MAT_ELEM(angles,0,283)=23.2736;	MAT_ELEM(angles,1,283)=37.1611;
 		MAT_ELEM(angles,0,284)=311.2736;MAT_ELEM(angles,1,284)=37.1611;
-		MAT_ELEM(angles,0,285)=5.1634;MAT_ELEM(angles,1,285)=66.0423;
-		MAT_ELEM(angles,0,286)=77.1634;MAT_ELEM(angles,1,286)=66.0423;
+		MAT_ELEM(angles,0,285)=5.1634;	MAT_ELEM(angles,1,285)=66.0423;
+		MAT_ELEM(angles,0,286)=77.1634;	MAT_ELEM(angles,1,286)=66.0423;
 		MAT_ELEM(angles,0,287)=293.1634;MAT_ELEM(angles,1,287)=66.0423;
-		MAT_ELEM(angles,0,288)=27;MAT_ELEM(angles,1,288)=90;
-		MAT_ELEM(angles,0,289)=315;MAT_ELEM(angles,1,289)=90;
+		MAT_ELEM(angles,0,288)=27;		MAT_ELEM(angles,1,288)=90;
+		MAT_ELEM(angles,0,289)=315;		MAT_ELEM(angles,1,289)=90;
 		MAT_ELEM(angles,0,290)=222.0948;MAT_ELEM(angles,1,290)=50.768;
 		MAT_ELEM(angles,0,291)=150.0948;MAT_ELEM(angles,1,291)=50.768;
-		MAT_ELEM(angles,0,292)=324;MAT_ELEM(angles,1,292)=23.7881;
-		MAT_ELEM(angles,0,293)=36;MAT_ELEM(angles,1,293)=23.7881;
-		MAT_ELEM(angles,0,294)=350.701;MAT_ELEM(angles,1,294)=58.6205;
-		MAT_ELEM(angles,0,295)=297.299;MAT_ELEM(angles,1,295)=58.6205;
+		MAT_ELEM(angles,0,292)=324;		MAT_ELEM(angles,1,292)=23.7881;
+		MAT_ELEM(angles,0,293)=36;		MAT_ELEM(angles,1,293)=23.7881;
+		MAT_ELEM(angles,0,294)=350.701;	MAT_ELEM(angles,1,294)=58.6205;
+		MAT_ELEM(angles,0,295)=297.299;	MAT_ELEM(angles,1,295)=58.6205;
 		MAT_ELEM(angles,0,296)=337.8119;MAT_ELEM(angles,1,296)=83.2609;
 		MAT_ELEM(angles,0,297)=310.1881;MAT_ELEM(angles,1,297)=83.2609;
-		MAT_ELEM(angles,0,298)=62.701;MAT_ELEM(angles,1,298)=58.6205;
-		MAT_ELEM(angles,0,299)=22.1881;MAT_ELEM(angles,1,299)=83.2609;
-		MAT_ELEM(angles,0,300)=49.8119;MAT_ELEM(angles,1,300)=83.2609;
-		MAT_ELEM(angles,0,301)=206.701;MAT_ELEM(angles,1,301)=58.621;
-		MAT_ELEM(angles,0,302)=153.299;MAT_ELEM(angles,1,302)=58.621;
-		MAT_ELEM(angles,0,303)=180;MAT_ELEM(angles,1,303)=39.647;
-		MAT_ELEM(angles,0,304)=252;MAT_ELEM(angles,1,304)=39.647;
-		MAT_ELEM(angles,0,305)=108;MAT_ELEM(angles,1,305)=39.647;
-		MAT_ELEM(angles,0,306)=324;MAT_ELEM(angles,1,306)=55.5056;
-		MAT_ELEM(angles,0,307)=36;MAT_ELEM(angles,1,307)=55.5056;
-		MAT_ELEM(angles,0,308)=27.3931;MAT_ELEM(angles,1,308)=61.2449;
+		MAT_ELEM(angles,0,298)=62.701;	MAT_ELEM(angles,1,298)=58.6205;
+		MAT_ELEM(angles,0,299)=22.1881;	MAT_ELEM(angles,1,299)=83.2609;
+		MAT_ELEM(angles,0,300)=49.8119;	MAT_ELEM(angles,1,300)=83.2609;
+		MAT_ELEM(angles,0,301)=206.701;	MAT_ELEM(angles,1,301)=58.621;
+		MAT_ELEM(angles,0,302)=153.299;	MAT_ELEM(angles,1,302)=58.621;
+		MAT_ELEM(angles,0,303)=180;		MAT_ELEM(angles,1,303)=39.647;
+		MAT_ELEM(angles,0,304)=252;		MAT_ELEM(angles,1,304)=39.647;
+		MAT_ELEM(angles,0,305)=108;		MAT_ELEM(angles,1,305)=39.647;
+		MAT_ELEM(angles,0,306)=324;		MAT_ELEM(angles,1,306)=55.5056;
+		MAT_ELEM(angles,0,307)=36;		MAT_ELEM(angles,1,307)=55.5056;
+		MAT_ELEM(angles,0,308)=27.3931;	MAT_ELEM(angles,1,308)=61.2449;
 		MAT_ELEM(angles,0,309)=175.0477;MAT_ELEM(angles,1,309)=69.933;
 		MAT_ELEM(angles,0,310)=112.9523;MAT_ELEM(angles,1,310)=69.933;
 		MAT_ELEM(angles,0,311)=184.9523;MAT_ELEM(angles,1,311)=69.933;
@@ -832,104 +854,104 @@ void ProgFSO::generateDirections(Matrix2D<double> &angles, bool alot)
 		MAT_ELEM(angles,0,314)=103.0477;MAT_ELEM(angles,1,314)=69.933;
 		MAT_ELEM(angles,0,315)=243.3931;MAT_ELEM(angles,1,315)=61.245;
 		MAT_ELEM(angles,0,316)=116.6069;MAT_ELEM(angles,1,316)=61.245;
-		MAT_ELEM(angles,0,317)=180;MAT_ELEM(angles,1,317)=7.929;
-		MAT_ELEM(angles,0,318)=252;MAT_ELEM(angles,1,318)=7.929;
-		MAT_ELEM(angles,0,319)=99.3931;MAT_ELEM(angles,1,319)=61.245;
-		MAT_ELEM(angles,0,320)=108;MAT_ELEM(angles,1,320)=7.929;
+		MAT_ELEM(angles,0,317)=180;		MAT_ELEM(angles,1,317)=7.929;
+		MAT_ELEM(angles,0,318)=252;		MAT_ELEM(angles,1,318)=7.929;
+		MAT_ELEM(angles,0,319)=99.3931;	MAT_ELEM(angles,1,319)=61.245;
+		MAT_ELEM(angles,0,320)=108;		MAT_ELEM(angles,1,320)=7.929;
 	}
 	else
 	{
-	//TODO: use coordinates on the sphere instead of angles
-	angles.initZeros(2,81);
-	MAT_ELEM(angles, 0, 0) = 0.000000;	 	 MAT_ELEM(angles, 1, 0) = 0.000000;
-	MAT_ELEM(angles, 0, 1) = 36.000000;	 	 MAT_ELEM(angles, 1, 1) = 15.858741;
-	MAT_ELEM(angles, 0, 2) = 36.000000;	 	 MAT_ELEM(angles, 1, 2) = 31.717482;
-	MAT_ELEM(angles, 0, 3) = 36.000000;	 	 MAT_ELEM(angles, 1, 3) = 47.576224;
-	MAT_ELEM(angles, 0, 4) = 36.000000;	 	 MAT_ELEM(angles, 1, 4) = 63.434965;
-	MAT_ELEM(angles, 0, 5) = 62.494295;	 	 MAT_ELEM(angles, 1, 5) = -76.558393;
-	MAT_ELEM(angles, 0, 6) = 54.000000;	 	 MAT_ELEM(angles, 1, 6) = 90.000000;
-	MAT_ELEM(angles, 0, 7) = 45.505705;	 	 MAT_ELEM(angles, 1, 7) = 76.558393;
-	MAT_ELEM(angles, 0, 8) = 108.000000;	 MAT_ELEM(angles, 1, 8) = 15.858741;
-	MAT_ELEM(angles, 0, 9) = 108.000000;	 MAT_ELEM(angles, 1, 9) = 31.717482;
-	MAT_ELEM(angles, 0, 10) = 108.000000;	 MAT_ELEM(angles, 1, 10) = 47.576224;
-	MAT_ELEM(angles, 0, 11) = 108.000000;	 MAT_ELEM(angles, 1, 11) = 63.434965;
-	MAT_ELEM(angles, 0, 12) = 134.494295;	 MAT_ELEM(angles, 1, 12) = -76.558393;
-	MAT_ELEM(angles, 0, 13) = 126.000000;	 MAT_ELEM(angles, 1, 13) = 90.000000;
-	MAT_ELEM(angles, 0, 14) = 117.505705;	 MAT_ELEM(angles, 1, 14) = 76.558393;
-	MAT_ELEM(angles, 0, 15) = 144.000000;	 MAT_ELEM(angles, 1, 15) = -15.858741;
-	MAT_ELEM(angles, 0, 16) = 144.000000;	 MAT_ELEM(angles, 1, 16) = -31.717482;
-	MAT_ELEM(angles, 0, 17) = 144.000000;	 MAT_ELEM(angles, 1, 17) = -47.576224;
-	MAT_ELEM(angles, 0, 18) = 144.000000;	 MAT_ELEM(angles, 1, 18) = -63.434965;
-	MAT_ELEM(angles, 0, 19) = 170.494295;	 MAT_ELEM(angles, 1, 19) = 76.558393;
-	MAT_ELEM(angles, 0, 20) = 162.000000;	 MAT_ELEM(angles, 1, 20) = 90.000000;
-	MAT_ELEM(angles, 0, 21) = 153.505705;	 MAT_ELEM(angles, 1, 21) = -76.558393;
-	MAT_ELEM(angles, 0, 22) = 72.000000;	 MAT_ELEM(angles, 1, 22) = -15.858741;
-	MAT_ELEM(angles, 0, 23) = 72.000000;	 MAT_ELEM(angles, 1, 23) = -31.717482;
-	MAT_ELEM(angles, 0, 24) = 72.000000;	 MAT_ELEM(angles, 1, 24) = -47.576224;
-	MAT_ELEM(angles, 0, 25) = 72.000000;	 MAT_ELEM(angles, 1, 25) = -63.434965;
-	MAT_ELEM(angles, 0, 26) = 98.494295;	 MAT_ELEM(angles, 1, 26) = 76.558393;
-	MAT_ELEM(angles, 0, 27) = 90.000000;	 MAT_ELEM(angles, 1, 27) = 90.000000;
-	MAT_ELEM(angles, 0, 28) = 81.505705;	 MAT_ELEM(angles, 1, 28) = -76.558393;
-	MAT_ELEM(angles, 0, 29) = 0.000000;	 	 MAT_ELEM(angles, 1, 29) = -15.858741;
-	MAT_ELEM(angles, 0, 30) = 0.000000;	 	 MAT_ELEM(angles, 1, 30) = -31.717482;
-	MAT_ELEM(angles, 0, 31) = 0.000000;	 	 MAT_ELEM(angles, 1, 31) = -47.576224;
-	MAT_ELEM(angles, 0, 32) = 0.000000;	 	 MAT_ELEM(angles, 1, 32) = -63.434965;
-	MAT_ELEM(angles, 0, 33) = 26.494295;	 MAT_ELEM(angles, 1, 33) = 76.558393;
-	MAT_ELEM(angles, 0, 34) = 18.000000;	 MAT_ELEM(angles, 1, 34) = 90.000000;
-	MAT_ELEM(angles, 0, 35) = 9.505705;	 	 MAT_ELEM(angles, 1, 35) = -76.558393;
-	MAT_ELEM(angles, 0, 36) = 12.811021;	 MAT_ELEM(angles, 1, 36) = 42.234673;
-	MAT_ELEM(angles, 0, 37) = 18.466996;	 MAT_ELEM(angles, 1, 37) = 59.620797;
-	MAT_ELEM(angles, 0, 38) = 0.000000;	 	 MAT_ELEM(angles, 1, 38) = 90.000000;
-	MAT_ELEM(angles, 0, 39) = 8.867209;	 	 MAT_ELEM(angles, 1, 39) = 75.219088;
-	MAT_ELEM(angles, 0, 40) = 72.000000;	 MAT_ELEM(angles, 1, 40) = 26.565058;
-	MAT_ELEM(angles, 0, 41) = 59.188979;	 MAT_ELEM(angles, 1, 41) = 42.234673;
-	MAT_ELEM(angles, 0, 42) = 84.811021;	 MAT_ELEM(angles, 1, 42) = 42.234673;
-	MAT_ELEM(angles, 0, 43) = 53.533003;	 MAT_ELEM(angles, 1, 43) = 59.620797;
-	MAT_ELEM(angles, 0, 44) = 72.000000;	 MAT_ELEM(angles, 1, 44) = 58.282544;
-	MAT_ELEM(angles, 0, 45) = 90.466996;	 MAT_ELEM(angles, 1, 45) = 59.620797;
-	MAT_ELEM(angles, 0, 46) = 72.000000;	 MAT_ELEM(angles, 1, 46) = 90.000000;
-	MAT_ELEM(angles, 0, 47) = 63.132791;	 MAT_ELEM(angles, 1, 47) = 75.219088;
-	MAT_ELEM(angles, 0, 48) = 80.867209;	 MAT_ELEM(angles, 1, 48) = 75.219088;
-	MAT_ELEM(angles, 0, 49) = 144.000000;	 MAT_ELEM(angles, 1, 49) = 26.565058;
-	MAT_ELEM(angles, 0, 50) = 131.188979;	 MAT_ELEM(angles, 1, 50) = 42.234673;
-	MAT_ELEM(angles, 0, 51) = 156.811021;	 MAT_ELEM(angles, 1, 51) = 42.234673;
-	MAT_ELEM(angles, 0, 52) = 125.533003;	 MAT_ELEM(angles, 1, 52) = 59.620797;
-	MAT_ELEM(angles, 0, 53) = 144.000000;	 MAT_ELEM(angles, 1, 53) = 58.282544;
-	MAT_ELEM(angles, 0, 54) = 162.466996;	 MAT_ELEM(angles, 1, 54) = 59.620797;
-	MAT_ELEM(angles, 0, 55) = 144.000000;	 MAT_ELEM(angles, 1, 55) = 90.000000;
-	MAT_ELEM(angles, 0, 56) = 135.132791;	 MAT_ELEM(angles, 1, 56) = 75.219088;
-	MAT_ELEM(angles, 0, 57) = 152.867209;	 MAT_ELEM(angles, 1, 57) = 75.219088;
-	MAT_ELEM(angles, 0, 58) = 180.000000;	 MAT_ELEM(angles, 1, 58) = -26.565058;
-	MAT_ELEM(angles, 0, 59) = 167.188979;	 MAT_ELEM(angles, 1, 59) = -42.234673;
-	MAT_ELEM(angles, 0, 60) = 180.000000;	 MAT_ELEM(angles, 1, 60) = -58.282544;
-	MAT_ELEM(angles, 0, 61) = 161.533003;	 MAT_ELEM(angles, 1, 61) = -59.620797;
-	MAT_ELEM(angles, 0, 62) = 171.132791;	 MAT_ELEM(angles, 1, 62) = -75.219088;
-	MAT_ELEM(angles, 0, 63) = 108.000000;	 MAT_ELEM(angles, 1, 63) = -26.565058;
-	MAT_ELEM(angles, 0, 64) = 120.811021;	 MAT_ELEM(angles, 1, 64) = -42.234673;
-	MAT_ELEM(angles, 0, 65) = 95.188979;	 MAT_ELEM(angles, 1, 65) = -42.234673;
-	MAT_ELEM(angles, 0, 66) = 126.466996;	 MAT_ELEM(angles, 1, 66) = -59.620797;
-	MAT_ELEM(angles, 0, 67) = 108.000000;	 MAT_ELEM(angles, 1, 67) = -58.282544;
-	MAT_ELEM(angles, 0, 68) = 89.533003;	 MAT_ELEM(angles, 1, 68) = -59.620797;
-	MAT_ELEM(angles, 0, 69) = 108.000000;	 MAT_ELEM(angles, 1, 69) = 90.000000;
-	MAT_ELEM(angles, 0, 70) = 116.867209;	 MAT_ELEM(angles, 1, 70) = -75.219088;
-	MAT_ELEM(angles, 0, 71) = 99.132791;	 MAT_ELEM(angles, 1, 71) = -75.219088;
-	MAT_ELEM(angles, 0, 72) = 36.000000;	 MAT_ELEM(angles, 1, 72) = -26.565058;
-	MAT_ELEM(angles, 0, 73) = 48.811021;	 MAT_ELEM(angles, 1, 73) = -42.234673;
-	MAT_ELEM(angles, 0, 74) = 23.188979;	 MAT_ELEM(angles, 1, 74) = -42.234673;
-	MAT_ELEM(angles, 0, 75) = 54.466996;	 MAT_ELEM(angles, 1, 75) = -59.620797;
-	MAT_ELEM(angles, 0, 76) = 36.000000;	 MAT_ELEM(angles, 1, 76) = -58.282544;
-	MAT_ELEM(angles, 0, 77) = 17.533003;	 MAT_ELEM(angles, 1, 77) = -59.620797;
-	MAT_ELEM(angles, 0, 78) = 36.000000;	 MAT_ELEM(angles, 1, 78) = 90.000000;
-	MAT_ELEM(angles, 0, 79) = 44.867209;	 MAT_ELEM(angles, 1, 79) = -75.219088;
-	MAT_ELEM(angles, 0, 80) = 27.132791;	 MAT_ELEM(angles, 1, 80) = -75.219088;
+		angles.initZeros(2,81);
+		MAT_ELEM(angles, 0, 0) = 0.000000;	 	 MAT_ELEM(angles, 1, 0) = 0.000000;
+		MAT_ELEM(angles, 0, 1) = 36.000000;	 	 MAT_ELEM(angles, 1, 1) = 15.858741;
+		MAT_ELEM(angles, 0, 2) = 36.000000;	 	 MAT_ELEM(angles, 1, 2) = 31.717482;
+		MAT_ELEM(angles, 0, 3) = 36.000000;	 	 MAT_ELEM(angles, 1, 3) = 47.576224;
+		MAT_ELEM(angles, 0, 4) = 36.000000;	 	 MAT_ELEM(angles, 1, 4) = 63.434965;
+		MAT_ELEM(angles, 0, 5) = 62.494295;	 	 MAT_ELEM(angles, 1, 5) = -76.558393;
+		MAT_ELEM(angles, 0, 6) = 54.000000;	 	 MAT_ELEM(angles, 1, 6) = 90.000000;
+		MAT_ELEM(angles, 0, 7) = 45.505705;	 	 MAT_ELEM(angles, 1, 7) = 76.558393;
+		MAT_ELEM(angles, 0, 8) = 108.000000;	 MAT_ELEM(angles, 1, 8) = 15.858741;
+		MAT_ELEM(angles, 0, 9) = 108.000000;	 MAT_ELEM(angles, 1, 9) = 31.717482;
+		MAT_ELEM(angles, 0, 10) = 108.000000;	 MAT_ELEM(angles, 1, 10) = 47.576224;
+		MAT_ELEM(angles, 0, 11) = 108.000000;	 MAT_ELEM(angles, 1, 11) = 63.434965;
+		MAT_ELEM(angles, 0, 12) = 134.494295;	 MAT_ELEM(angles, 1, 12) = -76.558393;
+		MAT_ELEM(angles, 0, 13) = 126.000000;	 MAT_ELEM(angles, 1, 13) = 90.000000;
+		MAT_ELEM(angles, 0, 14) = 117.505705;	 MAT_ELEM(angles, 1, 14) = 76.558393;
+		MAT_ELEM(angles, 0, 15) = 144.000000;	 MAT_ELEM(angles, 1, 15) = -15.858741;
+		MAT_ELEM(angles, 0, 16) = 144.000000;	 MAT_ELEM(angles, 1, 16) = -31.717482;
+		MAT_ELEM(angles, 0, 17) = 144.000000;	 MAT_ELEM(angles, 1, 17) = -47.576224;
+		MAT_ELEM(angles, 0, 18) = 144.000000;	 MAT_ELEM(angles, 1, 18) = -63.434965;
+		MAT_ELEM(angles, 0, 19) = 170.494295;	 MAT_ELEM(angles, 1, 19) = 76.558393;
+		MAT_ELEM(angles, 0, 20) = 162.000000;	 MAT_ELEM(angles, 1, 20) = 90.000000;
+		MAT_ELEM(angles, 0, 21) = 153.505705;	 MAT_ELEM(angles, 1, 21) = -76.558393;
+		MAT_ELEM(angles, 0, 22) = 72.000000;	 MAT_ELEM(angles, 1, 22) = -15.858741;
+		MAT_ELEM(angles, 0, 23) = 72.000000;	 MAT_ELEM(angles, 1, 23) = -31.717482;
+		MAT_ELEM(angles, 0, 24) = 72.000000;	 MAT_ELEM(angles, 1, 24) = -47.576224;
+		MAT_ELEM(angles, 0, 25) = 72.000000;	 MAT_ELEM(angles, 1, 25) = -63.434965;
+		MAT_ELEM(angles, 0, 26) = 98.494295;	 MAT_ELEM(angles, 1, 26) = 76.558393;
+		MAT_ELEM(angles, 0, 27) = 90.000000;	 MAT_ELEM(angles, 1, 27) = 90.000000;
+		MAT_ELEM(angles, 0, 28) = 81.505705;	 MAT_ELEM(angles, 1, 28) = -76.558393;
+		MAT_ELEM(angles, 0, 29) = 0.000000;	 	 MAT_ELEM(angles, 1, 29) = -15.858741;
+		MAT_ELEM(angles, 0, 30) = 0.000000;	 	 MAT_ELEM(angles, 1, 30) = -31.717482;
+		MAT_ELEM(angles, 0, 31) = 0.000000;	 	 MAT_ELEM(angles, 1, 31) = -47.576224;
+		MAT_ELEM(angles, 0, 32) = 0.000000;	 	 MAT_ELEM(angles, 1, 32) = -63.434965;
+		MAT_ELEM(angles, 0, 33) = 26.494295;	 MAT_ELEM(angles, 1, 33) = 76.558393;
+		MAT_ELEM(angles, 0, 34) = 18.000000;	 MAT_ELEM(angles, 1, 34) = 90.000000;
+		MAT_ELEM(angles, 0, 35) = 9.505705;	 	 MAT_ELEM(angles, 1, 35) = -76.558393;
+		MAT_ELEM(angles, 0, 36) = 12.811021;	 MAT_ELEM(angles, 1, 36) = 42.234673;
+		MAT_ELEM(angles, 0, 37) = 18.466996;	 MAT_ELEM(angles, 1, 37) = 59.620797;
+		MAT_ELEM(angles, 0, 38) = 0.000000;	 	 MAT_ELEM(angles, 1, 38) = 90.000000;
+		MAT_ELEM(angles, 0, 39) = 8.867209;	 	 MAT_ELEM(angles, 1, 39) = 75.219088;
+		MAT_ELEM(angles, 0, 40) = 72.000000;	 MAT_ELEM(angles, 1, 40) = 26.565058;
+		MAT_ELEM(angles, 0, 41) = 59.188979;	 MAT_ELEM(angles, 1, 41) = 42.234673;
+		MAT_ELEM(angles, 0, 42) = 84.811021;	 MAT_ELEM(angles, 1, 42) = 42.234673;
+		MAT_ELEM(angles, 0, 43) = 53.533003;	 MAT_ELEM(angles, 1, 43) = 59.620797;
+		MAT_ELEM(angles, 0, 44) = 72.000000;	 MAT_ELEM(angles, 1, 44) = 58.282544;
+		MAT_ELEM(angles, 0, 45) = 90.466996;	 MAT_ELEM(angles, 1, 45) = 59.620797;
+		MAT_ELEM(angles, 0, 46) = 72.000000;	 MAT_ELEM(angles, 1, 46) = 90.000000;
+		MAT_ELEM(angles, 0, 47) = 63.132791;	 MAT_ELEM(angles, 1, 47) = 75.219088;
+		MAT_ELEM(angles, 0, 48) = 80.867209;	 MAT_ELEM(angles, 1, 48) = 75.219088;
+		MAT_ELEM(angles, 0, 49) = 144.000000;	 MAT_ELEM(angles, 1, 49) = 26.565058;
+		MAT_ELEM(angles, 0, 50) = 131.188979;	 MAT_ELEM(angles, 1, 50) = 42.234673;
+		MAT_ELEM(angles, 0, 51) = 156.811021;	 MAT_ELEM(angles, 1, 51) = 42.234673;
+		MAT_ELEM(angles, 0, 52) = 125.533003;	 MAT_ELEM(angles, 1, 52) = 59.620797;
+		MAT_ELEM(angles, 0, 53) = 144.000000;	 MAT_ELEM(angles, 1, 53) = 58.282544;
+		MAT_ELEM(angles, 0, 54) = 162.466996;	 MAT_ELEM(angles, 1, 54) = 59.620797;
+		MAT_ELEM(angles, 0, 55) = 144.000000;	 MAT_ELEM(angles, 1, 55) = 90.000000;
+		MAT_ELEM(angles, 0, 56) = 135.132791;	 MAT_ELEM(angles, 1, 56) = 75.219088;
+		MAT_ELEM(angles, 0, 57) = 152.867209;	 MAT_ELEM(angles, 1, 57) = 75.219088;
+		MAT_ELEM(angles, 0, 58) = 180.000000;	 MAT_ELEM(angles, 1, 58) = -26.565058;
+		MAT_ELEM(angles, 0, 59) = 167.188979;	 MAT_ELEM(angles, 1, 59) = -42.234673;
+		MAT_ELEM(angles, 0, 60) = 180.000000;	 MAT_ELEM(angles, 1, 60) = -58.282544;
+		MAT_ELEM(angles, 0, 61) = 161.533003;	 MAT_ELEM(angles, 1, 61) = -59.620797;
+		MAT_ELEM(angles, 0, 62) = 171.132791;	 MAT_ELEM(angles, 1, 62) = -75.219088;
+		MAT_ELEM(angles, 0, 63) = 108.000000;	 MAT_ELEM(angles, 1, 63) = -26.565058;
+		MAT_ELEM(angles, 0, 64) = 120.811021;	 MAT_ELEM(angles, 1, 64) = -42.234673;
+		MAT_ELEM(angles, 0, 65) = 95.188979;	 MAT_ELEM(angles, 1, 65) = -42.234673;
+		MAT_ELEM(angles, 0, 66) = 126.466996;	 MAT_ELEM(angles, 1, 66) = -59.620797;
+		MAT_ELEM(angles, 0, 67) = 108.000000;	 MAT_ELEM(angles, 1, 67) = -58.282544;
+		MAT_ELEM(angles, 0, 68) = 89.533003;	 MAT_ELEM(angles, 1, 68) = -59.620797;
+		MAT_ELEM(angles, 0, 69) = 108.000000;	 MAT_ELEM(angles, 1, 69) = 90.000000;
+		MAT_ELEM(angles, 0, 70) = 116.867209;	 MAT_ELEM(angles, 1, 70) = -75.219088;
+		MAT_ELEM(angles, 0, 71) = 99.132791;	 MAT_ELEM(angles, 1, 71) = -75.219088;
+		MAT_ELEM(angles, 0, 72) = 36.000000;	 MAT_ELEM(angles, 1, 72) = -26.565058;
+		MAT_ELEM(angles, 0, 73) = 48.811021;	 MAT_ELEM(angles, 1, 73) = -42.234673;
+		MAT_ELEM(angles, 0, 74) = 23.188979;	 MAT_ELEM(angles, 1, 74) = -42.234673;
+		MAT_ELEM(angles, 0, 75) = 54.466996;	 MAT_ELEM(angles, 1, 75) = -59.620797;
+		MAT_ELEM(angles, 0, 76) = 36.000000;	 MAT_ELEM(angles, 1, 76) = -58.282544;
+		MAT_ELEM(angles, 0, 77) = 17.533003;	 MAT_ELEM(angles, 1, 77) = -59.620797;
+		MAT_ELEM(angles, 0, 78) = 36.000000;	 MAT_ELEM(angles, 1, 78) = 90.000000;
+		MAT_ELEM(angles, 0, 79) = 44.867209;	 MAT_ELEM(angles, 1, 79) = -75.219088;
+		MAT_ELEM(angles, 0, 80) = 27.132791;	 MAT_ELEM(angles, 1, 80) = -75.219088;
 	}
 
 	angles *= PI/180;
-
 }
 
 
-//TODO: Merge with Simple
+// ANISOTROPYPARAMETER: Given a directional FSC it is determined how many 
+// frequencyes/points of the FSC has a greater fsc than the fsc threshold, thrs, 
+// This is carried out in aniParam, .
 void ProgFSO::anistropyParameter(const MultidimArray<double> FSC,
 		MultidimArray<double> &directionAnisotropy, size_t dirnumber,
 		MultidimArray<double> &aniParam, double thrs)
@@ -946,15 +968,11 @@ void ProgFSO::anistropyParameter(const MultidimArray<double> FSC,
 	DIRECT_MULTIDIM_ELEM(directionAnisotropy, dirnumber) = N;
 }
 
-void ProgFSO::anistropyParameterSimple(const MultidimArray<double> FSC,
-		MultidimArray<double> &aniParam, double thrs)
-{
 
-	for (size_t k = 0; k<aniParam.nzyxdim; k++)
-		if (DIRECT_MULTIDIM_ELEM(FSC, k) >= thrs)
-			DIRECT_MULTIDIM_ELEM(aniParam, k) += 1.0;
-}
-
+// PREPAREDATA: Data are prepared to be taken by the algorithm. 
+// The half maps will be read and stored in the multidimarray half1, and half2.
+// Also de mask (if provided) is read and stored in mask (defined in .h)
+// the flag test = true, launch a unitary test with phantom data generated in the code
 void ProgFSO::prepareData(MultidimArray<double> &half1, MultidimArray<double> &half2, bool test)
 {
 	Image<double> mask;
@@ -991,6 +1009,7 @@ void ProgFSO::prepareData(MultidimArray<double> &half1, MultidimArray<double> &h
 		half1 = imgHalf1();
 		half2 = imgHalf2();
 
+		// Applying the mask
 		if (fnmask!="")
 		{
 			mask.read(fnmask);
@@ -1008,30 +1027,13 @@ void ProgFSO::prepareData(MultidimArray<double> &half1, MultidimArray<double> &h
 	half1.setXmippOrigin();
 	half2.setXmippOrigin();
 
+	// fftshift must by applied before computing the fft. This will be computed later
 	CenterFFT(half1, true);
 	CenterFFT(half2, true);
-
 }
 
-
-void ProgFSO::saveFSCToMetadata(MetaData &mdRes,
-		const MultidimArray<double> &freq,
-		const MultidimArray<double> &FSC, FileName &fnmd)
-{
-	size_t id;
-	FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
-	{
-		if (i>0)
-		{
-			id=mdRes.addObject();
-			mdRes.setValue(MDL_RESOLUTION_FREQ,dAi(freq, i),id);
-			mdRes.setValue(MDL_RESOLUTION_FRC,dAi(FSC, i),id);
-			mdRes.setValue(MDL_RESOLUTION_FREQREAL,1./dAi(freq, i),id);
-		}
-	}
-	mdRes.write(fnmd);
-}
-
+// SAVEANISOTROPYTOMETADATA - The FSO is stored in metadata file. The FSO comes from
+// anisotropy and the frequencies from freq.
 void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 		const MultidimArray<double> &freq,
 		const MultidimArray<double> &anisotropy)
@@ -1050,7 +1052,12 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 	mdAnisotropy.write(fnOut+"/fso.xmd");
 }
 
-    void ProgFSO::directionalFilter(MultidimArray<std::complex<double>> &FThalf1, 
+
+
+// DIRECTIONALFILTER: The half maps are summed to get the full map, and are filtered
+// by an anisotropic filter with cutoff the isosurface of the fsc at the given threshold
+// introduced by the user. 
+void ProgFSO::directionalFilter(MultidimArray<std::complex<double>> &FThalf1, 
 			MultidimArray<double> &threeDfsc, 
 			MultidimArray<double> &filteredMap, int m1sizeX, int m1sizeY, int m1sizeZ)
     {
@@ -1067,17 +1074,21 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 		MultidimArray<std::complex<double>> FThalf2;
 		FThalf2.resizeNoCopy(FThalf1);
         transformer1.FourierTransform(half2, FThalf2, false);
+
     	FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(threeDfsc)
         {
     		DIRECT_MULTIDIM_ELEM(FThalf1, n) += DIRECT_MULTIDIM_ELEM(FThalf2, n);
-			DIRECT_MULTIDIM_ELEM(FThalf1, n) *= DIRECT_MULTIDIM_ELEM(threeDfsc, n);
+			DIRECT_MULTIDIM_ELEM(FThalf1, n) *= DIRECT_MULTIDIM_ELEM(threeDfsc, n); 
     	}
     	filteredMap.resizeNoCopy(m1sizeX, m1sizeY, m1sizeZ);
     	transformer1.inverseFourierTransform(FThalf1, filteredMap);
     }
 
-
-    void ProgFSO::resolutionDistribution(MultidimArray<double> &resDirFSC, FileName &fn)
+//RESOLUTIONDISTRIBUTION: This function stores in a metadata the resolution distribution on the
+// projection sphere. Thus the metadata contains the resolution of each direction.
+// To do that, a matrix with rows the rot angle and columns the tilt angle is created.
+// the rot angle goes from from 0-360 and tilt from 0-90 both in steps of 1 degree.
+void ProgFSO::resolutionDistribution(MultidimArray<double> &resDirFSC, FileName &fn)
     {
     	Matrix2D<int> anglesResolution;
     	size_t Nrot = 360;
@@ -1091,7 +1102,6 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
     	float cosAngle = cosf(ang_con);
     	float aux = 4.0/((cosAngle -1)*(cosAngle -1));
     	// Directional resolution is store in a metadata
-
 			
 		for (int i=0; i<Nrot; i++)
 		{
@@ -1100,10 +1110,12 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 			for (int j=0; j<Ntilt; j++)
 			{
 				float tiltmatrix = j*PI/180;
+				// position on the spehere
 				float xx = sinf(tiltmatrix)*cosf(rotmatrix);
 				float yy = sinf(tiltmatrix)*sinf(rotmatrix);
 				float zz = cosf(tiltmatrix);
 
+				// initializing the weights
 				float w = 0;
 				float wt = 0;
 
@@ -1113,6 +1125,7 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 					double rot = MAT_ELEM(angles, 0, k);
 					double tilt = MAT_ELEM(angles, 1, k);
 
+					// position of the direction on the sphere
 					double x_dir = sin(tilt)*cos(rot);
 					double y_dir = sin(tilt)*sin(rot);
 					double z_dir = cos(tilt);
@@ -1139,7 +1152,9 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
     }
 
 
-    void ProgFSO::getCompleteFourier(MultidimArray<double> &V, MultidimArray<double> &newV,
+// GETCOMPLETEFOURIER: Because of the hermitician symmetry of the Fourier space, xmipp works with the half
+// of the space. This function recover the whole Fourier space (both halfs).
+void ProgFSO::getCompleteFourier(MultidimArray<double> &V, MultidimArray<double> &newV,
     		int m1sizeX, int m1sizeY, int m1sizeZ)
         {
     	newV.resizeNoCopy(m1sizeX, m1sizeY, m1sizeZ);
@@ -1159,7 +1174,6 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 			{
 				ptrSource=(double*)&DIRECT_A3D_ELEM(V,k,i,j);
 				*ptrDest=*ptrSource;
-//				*(ptrDest+1)=*(ptrSource+1);
 			}
 			else
 			{
@@ -1173,7 +1187,9 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
    }
 
 
-    void ProgFSO::createFullFourier(MultidimArray<double> &fourierHalf, FileName &fnMap,
+// CREATEFULLFOURIER: The inpur is a Fourier Transform, the function will compute the full Fourier
+// and will save it in disc, with the name of fnMap m1sizeX, m1sizeY, m1sizeZ, define the size.
+void ProgFSO::createFullFourier(MultidimArray<double> &fourierHalf, FileName &fnMap,
     		int m1sizeX, int m1sizeY, int m1sizeZ)
     {
     	MultidimArray<double> fullMap;
@@ -1184,14 +1200,8 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 	    saveImg.write(fnMap);
     }
 
-	void ProgFSO::run()
-	{
-		run_fast();
-		//run_old();
-	}
 
-
-	void ProgFSO::run_fast()
+void ProgFSO::run()
 	{
 		std::cout << "Starting ... " << std::endl;
 		std::cout << " " << std::endl;
@@ -1210,7 +1220,7 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 
         transformer1.FourierTransform(half1, FT1, false);
      	transformer2.FourierTransform(half2, FT2, false);
-        
+        auto clockstartsfreq = std::chrono::high_resolution_clock::now();
 		// Defining frequencies freq_fourier_x,y,z and freqMap
 		// The number of frequencies in each shell freqElem is determined
 		// The number of accesible frequencies Ncomps and the size xvoldim
@@ -1218,19 +1228,21 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 
 		half1.clear();
 		half2.clear();
+		auto clockendsfreq = std::chrono::high_resolution_clock::now(); 
 
+		std::cout << "time freq = " << std::chrono::duration_cast<std::chrono::milliseconds>(clockendsfreq-clockstartsfreq).count()  << std::endl;
 		// Storing the shell of both maps as vectors global
 		// The global FSC is also computed
 		MultidimArray<double> fscglobal, freqglobal, freq;
 		double resol, resInterp;
-		arrangeFSC_and_fscGlobal(sampling, resol, thrs, resInterp, freq);
-		std::cout << "Resolution FSC at 0.143 = " << resol << " " << resInterp << std::endl;
+		auto clockstartsfsc = std::chrono::high_resolution_clock::now();
+		arrangeFSC_and_fscGlobal(sampling, thrs, resInterp, freq);
+		// std::cout << "Resolution FSC at 0.143 = " << resInterp << " " << resInterp << std::endl;
 		std::cout << " " << std::endl;
+		auto clockendsfsc = std::chrono::high_resolution_clock::now(); 
 
+		std::cout << "time fsc = " << std::chrono::duration_cast<std::chrono::milliseconds>(clockendsfsc-clockstartsfsc).count()  << std::endl;
 		FT2.clear();
-		// Determining best cone Angle
-		// bestAngleFunction();
-
 
 		// Generiting the set of directions to be analyzed
 		// And converting the cone angle to radians
@@ -1252,19 +1264,22 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 		normalizationMap.initZeros();
 		
 		
-		thrs = 0.143;
-
+		//thrs = 0.143;
+		auto clockstartsdir = std::chrono::high_resolution_clock::now();
     	for (size_t k = 0; k<angles.mdimx; k++)
 		{
-			// size_t k = 3;
-			double rot  = MAT_ELEM(angles, 0, k);
-			double tilt = MAT_ELEM(angles, 1, k);
+			// size_t k = 6;
+			float rot  = MAT_ELEM(angles, 0, k);
+			float tilt = MAT_ELEM(angles, 1, k);
 
 			// Estimating the direction FSC along the diretion given by rot and tilt
 			MetaData mdDirFSC;
 			fscDir_fast(fsc, rot, tilt, mdDirFSC, threeD_FSC, normalizationMap, resol, thrs, resInterp, k);
+			//fscDir_fast_cv(fsc, rot, tilt, mdDirFSC, threeD_FSC, normalizationMap, resol, thrs, resInterp, k);
 
-			std::cout << "Direction " << k << "/" << angles.mdimx << " resolution = " << resInterp << std::endl;
+			//fscDir_fast_all_angles(fsc, rot, tilt, mdDirFSC, threeD_FSC, normalizationMap, resol, thrs, resInterp, k);
+
+			printf ("Direction %zu/%zu -> %.2f A \n", k, angles.mdimx, resInterp);
 
 			dAi(resDirFSC, k) = resInterp;
 			
@@ -1282,24 +1297,33 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
     	aniParam /= (double) angles.mdimx;
     	MetaData mdani;
 		saveAnisotropyToMetadata(mdani, freq, aniParam);
+		auto clockendsdir = std::chrono::high_resolution_clock::now(); 
 
+		std::cout << "time dir= " << std::chrono::duration_cast<std::chrono::milliseconds>(clockendsdir-clockstartsdir).count()  << std::endl;
 		if (do_3dfsc_filter)
 		{
 			// HALF 3DFSC MAP
 			// TODO: do this step before
 			MultidimArray<double> d3_FSCMap;
+			MultidimArray<double> d3_aniFilter;
 			d3_FSCMap.resizeNoCopy(FT1);
 			d3_FSCMap.initConstant(0);
+			d3_aniFilter.resizeNoCopy(FT1);
+			d3_aniFilter.initConstant(0);
 
 			FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(threeD_FSC)
 			{
 					double value = DIRECT_MULTIDIM_ELEM(threeD_FSC, n) /= DIRECT_MULTIDIM_ELEM(normalizationMap, n);
 					if (std::isnan(value) == 1)
 						value = 1.0;
+					
+					if ((DIRECT_MULTIDIM_ELEM(threeD_FSC, n)> thrs) )//&& (DIRECT_MULTIDIM_ELEM(aniFilter, n) <1))
+						DIRECT_MULTIDIM_ELEM(aniFilter, n) = 1;
+					
 					size_t idx = DIRECT_MULTIDIM_ELEM(arr2indx, n);
 					DIRECT_MULTIDIM_ELEM(d3_FSCMap, idx) = value;
+					DIRECT_MULTIDIM_ELEM(d3_aniFilter, idx) = DIRECT_MULTIDIM_ELEM(aniFilter, n);
 			}
-			// std::cout << "llego1"<< std::endl;
 			// MultidimArray<double> filteredMap;
 			// filteredMap.resizeNoCopy(xvoldim, yvoldim, zvoldim);
 			// transformer1.inverseFourierTransform(FT1, filteredMap);
@@ -1317,33 +1341,328 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 				{
 					for(size_t k=0; k<ZSIZE(d3_FSCMap); ++k)
 					{
-							DIRECT_A3D_ELEM(d3_FSCMap,k,i,j) = DIRECT_A3D_ELEM(d3_FSCMap,k,i,j+1);
+						DIRECT_A3D_ELEM(d3_FSCMap,k,i,j) = DIRECT_A3D_ELEM(d3_FSCMap,k,i,j+1);
+						DIRECT_A3D_ELEM(d3_aniFilter,k,i,j) = DIRECT_A3D_ELEM(d3_aniFilter,k,i,j+1);
 					}
 				}
 			}
+
+			double sigma = 3;
+
+			realGaussianFilter(d3_aniFilter, sigma);
+
 			auto clockstarts = std::chrono::high_resolution_clock::now();
 			//TODO: directionalFilter reads the original map, avoid that
 			// DIRECTIONAL FILTERED MAP
 			MultidimArray<double> filteredMap;
-			directionalFilter(FT1, d3_FSCMap, filteredMap, xvoldim, yvoldim, zvoldim);
+			directionalFilter(FT1, d3_aniFilter, filteredMap, xvoldim, yvoldim, zvoldim);
 			Image<double> saveImg2;
 			saveImg2() = filteredMap;
 			saveImg2.write(fnOut+"/filteredMap.mrc");
+			
+			
 			//FULL 3DFSC MAP
 			fn = fnOut+"/3dFSC.mrc";
-			createFullFourier(d3_FSCMap, fn, xvoldim, yvoldim, zvoldim);
+			//createFullFourier(d3_FSCMap, fn, xvoldim, yvoldim, zvoldim);
+			createFullFourier(d3_aniFilter, fn, xvoldim, yvoldim, zvoldim);
 			
 			auto clockends = std::chrono::high_resolution_clock::now(); 
 
-			std::cout << "time = " << std::chrono::duration_cast<std::chrono::microseconds>(clockstarts-clockends).count()  << std::endl;
+			std::cout << "time = " << std::chrono::duration_cast<std::chrono::milliseconds>(clockends-clockstarts).count()  << std::endl;
 		}
 
-		// DIRECTIONAL RESOLUTION DISTRIBUTION
+		// DIRECTIONAL RESOLUTION DISTRIBUTION ON THE PROJECTION SPHERE
 		fn = fnOut+"/Resolution_Distribution.xmd";
 		
 		resolutionDistribution(resDirFSC, fn);
 		
 		std::cout << "-------------Finished-------------" << std::endl;
+}
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// FSCDIR_FSC: This is a testing function. Computes the fsc considering many cone angles.
+// TODO: Remove this function once the article will be published
+void ProgFSO::fscDir_fast_cv(MultidimArray<double> &fsc, double rot, double tilt,
+				MetaData &mdRes, MultidimArray<double> &threeD_FSC, MultidimArray<double> &normalizationMap,
+				double &fscFreq, double &thrs, double &resol, size_t dirnumber)
+{
+	size_t dim = NZYXSIZE(freqElems);
+	
+	
+	MultidimArray<float> num_g, den1_g, den2_g, num_g2, den1_g2, den2_g2;	
+	num_g.initZeros(dim);
+	den1_g.initZeros(dim);
+	den2_g.initZeros(dim);
+	num_g2 = num_g;
+	den1_g2 = den1_g;
+	den2_g2 = den2_g;
+
+	std::vector<long> vecidx;
+	std::vector<double> weightFSC3D;
+
+
+	//Parameter to determine the cone
+	float x_dir, y_dir, z_dir, cosAngle, aux;
+	x_dir = sinf(tilt)*cosf(rot);
+	y_dir = sinf(tilt)*sinf(rot);
+	z_dir = cosf(tilt);
+
+	cosAngle = (float) cos(ang_con);
+	
+	for (size_t ca = 6; ca <45; ca++)
+	{
+		cosAngle = (float) cos(ca*PI/180.0);
+		// It is multiply by 0.5 because later the weight is
+		// cosine = sqrt(exp( -((cosine -1)*(cosine -1))*aux )); 
+		// thus the computation of the weight is speeded up
+		// aux = 4.0/((cos(ang_con) -1)*(cos(ang_con) -1));
+		aux = (4.0/((cosAngle -1)*(cosAngle -1)));//*0.5;
+
+		float c2 = cosf(5.0*PI/180);
+
+		// Computing directional resolution
+		FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(real_z1z2)
+		{
+			float ux = DIRECT_MULTIDIM_ELEM(fx, n);
+			float uy = DIRECT_MULTIDIM_ELEM(fy, n);
+			float uz = DIRECT_MULTIDIM_ELEM(fz, n);
+
+			float cosine = fabs(x_dir*ux + y_dir*uy + z_dir*uz);
+
+			//std::cout << ux << " " << uy << " " << uz << " " << cosine << std::endl;
+			
+			if ((cosine >= cosAngle))// && (cosine<c2))	
+			{
+				cosine =      exp( -((cosine -1)*(cosine -1))*aux );
+
+				// in fact it is sqrt(exp( -((cosine -1)*(cosine -1))*aux )); 
+				// For shake of performance The sqrt is avoided dividing the by 2 in aux
+				//cosine = expf( -((cosine -1)*(cosine -1))*aux); 
+				//cosine = 1.0;
+				size_t idxf = DIRECT_MULTIDIM_ELEM(freqidx, n);
+				
+				dAi(num_g, idxf) += DIRECT_MULTIDIM_ELEM(real_z1z2, n)  * cosine;
+				dAi(den1_g, idxf) += DIRECT_MULTIDIM_ELEM(absz1_vec, n)  * cosine;
+				dAi(den2_g, idxf) += DIRECT_MULTIDIM_ELEM(absz2_vec, n)  * cosine;
+
+			}
+			// if (cosine >= c2)	
+			// {
+			// 	cosine =      exp( -((cosine -1)*(cosine -1))*aux );
+
+			// 	// in fact it is sqrt(exp( -((cosine -1)*(cosine -1))*aux )); 
+			// 	// For shake of performance The sqrt is avoided dividing the by 2 in aux
+			// 	//cosine = expf( -((cosine -1)*(cosine -1))*aux); 
+			// 	//cosine = 1.0;
+			// 	size_t idxf = DIRECT_MULTIDIM_ELEM(freqidx, n);
+				
+			// 	dAi(num_g2, idxf) += DIRECT_MULTIDIM_ELEM(real_z1z2, n)  * cosine;
+			// 	dAi(den1_g2,idxf) += DIRECT_MULTIDIM_ELEM(absz1_vec, n)  * cosine;
+			// 	dAi(den2_g2,idxf) += DIRECT_MULTIDIM_ELEM(absz2_vec, n)  * cosine;
+
+			// }
+		}
+
+		MultidimArray< double > freq;
+		MultidimArray< double > frc;
+		freq.initZeros(dim);
+		fsc.resizeNoCopy(freq);
+		fsc.initConstant(1.0);
+		MultidimArray<double> fscg2;
+		fscg2 = fsc;
+
+
+		//The fsc is stored in a metadata and saved
+		#ifdef SAVE_DIR_FSC
+		FileName fnmd;
+		
+		size_t id;
+		FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
+		{
+
+			dAi(fsc,i) = (dAi(num_g,i))/(sqrt(dAi(den1_g,i)*dAi(den2_g,i))+1e-38);
+			dAi(fscg2,i) = (dAi(num_g2,i))/(sqrt(dAi(den1_g2,i)*dAi(den2_g2,i))+1e-38);
+			dAi(freq,i) = (float) i / (xvoldim * sampling);
+
+			// std::cout << 1./dAi(freq,i) << "   " << dAi(fsc,i) << "  " << dAi(num,i) << "   " << dAi(den1,i) << "   " << dAi(den2,i) << std::endl;
+
+			// std::cout << i << " " << dAi(fsc,i) << std::endl;
+
+			if (i>0)
+			{
+				id=mdRes.addObject();
+				//mdRes.setValue(MDL_RESOLUTION_FREQ,dAi(freq, i),id);
+				mdRes.setValue(MDL_RESOLUTION_FRC,dAi(fsc, i),id);
+				mdRes.setValue(MDL_RESOLUTION_SSNR,dAi(fscg2, i),id);
+				mdRes.setValue(MDL_RESOLUTION_FREQREAL, 1./dAi(freq, i), id);
+				mdRes.setValue(MDL_COUNT, ca, id);
+			}
+		}
+		fnmd = fnOut + formatString("/fscDirection_%i.xmd", dirnumber);
+		mdRes.write(fnmd);
+		#endif
+		//TODO: join with previous loop
+		FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
+		{
+			if ( (dAi(fsc,i)<=thrs) && (i>2) )
+			{
+				double y2, y1, x2, x1, slope, ny;
+				y2 = dAi(freq,i);
+				y1 = dAi(freq,i-1);
+				x2 = dAi(fsc,i);
+				x1 = dAi(fsc,i-1);
+
+				slope = (y2 - y1)/(x2 - x1);
+				ny = y2 - slope*x2;
+
+				resol = 1/(slope*thrs + ny);
+				fscFreq = 1.0/dAi(freq, i);
+				break;
+			}
+		}
 	}
 
+	
+	
+	if (do_3dfsc_filter)
+	{
+
+		size_t sizevec = vecidx.size();
+		for (size_t kk = 0; kk< sizevec; ++kk)
+		{
+			double w = weightFSC3D[kk];
+			long n = vecidx[kk];
+			size_t ind = DIRECT_MULTIDIM_ELEM(freqidx, n);
+			
+			DIRECT_MULTIDIM_ELEM(threeD_FSC, n) += w*DIRECT_MULTIDIM_ELEM(fsc, ind);
+			DIRECT_MULTIDIM_ELEM(normalizationMap, n) += w;
+		}
+	}
+}
+
+
+
+void ProgFSO::fscDir_fast_all_angles(MultidimArray<double> &fsc, double rot, double tilt,
+				MetaData &mdRes, MultidimArray<double> &threeD_FSC, MultidimArray<double> &normalizationMap,
+				double &fscFreq, double &thrs, double &resol, size_t dirnumber)
+{
+	size_t dim = NZYXSIZE(freqElems);
+	
+	MultidimArray<float> num, den1, den2;	
+	// num.initZeros(dim);
+	// den1.initZeros(dim);
+	// den2.initZeros(dim);
+
+	std::vector<long> vecidx;
+	std::vector<double> weightFSC3D;
+
+
+	//Parameter to determine the cone
+	float x_dir, y_dir, z_dir, cosAngle, aux;
+	x_dir = sinf(tilt)*cosf(rot);
+	y_dir = sinf(tilt)*sinf(rot);
+	z_dir = cosf(tilt);
+	FileName fnmd;
+	fnmd = fnOut + formatString("/fscDirection_%i.xmd", dirnumber);
+
+	long cc = 0;
+
+	for (size_t aa = 5; aa<91; ++aa)
+	{
+		double aaa = (double) aa;
+		ang_con = aaa*PI/180.0;
+
+		num.initZeros(dim);
+		den1.initZeros(dim);
+		den2.initZeros(dim);
+
+	
+		cosAngle = (float) cos(ang_con);
+
+		// std::cout << " cos = " << cosAngle << std::endl;
+
+		// It is multiply by 0.5 because later the weight is
+		// cosine = sqrt(exp( -((cosine -1)*(cosine -1))*aux )); 
+		// thus the computation of the weight is speeded up
+		// aux = 4.0/((cos(ang_con) -1)*(cos(ang_con) -1));
+		aux = (4.0/((cosAngle -1)*(cosAngle -1)));//*0.5;
+
+		// Computing directional resolution
+		FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(real_z1z2)
+		{
+			float ux = DIRECT_MULTIDIM_ELEM(fx, n);
+			float uy = DIRECT_MULTIDIM_ELEM(fy, n);
+			float uz = DIRECT_MULTIDIM_ELEM(fz, n);
+
+			float cosine = fabs(x_dir*ux + y_dir*uy + z_dir*uz);
+
+			//std::cout << ux << " " << uy << " " << uz << " " << cosine << std::endl;
+			
+			if (cosine >= cosAngle)	
+			{
+				// cosine = exp( -((cosine -1)*(cosine -1))*aux );
+
+				// in fact it is sqrt(exp( -((cosine -1)*(cosine -1))*aux )); 
+				// For shake of performance The sqrt is avoided dividing the by 2 in aux
+				//cosine = expf( -((cosine -1)*(cosine -1))*aux); 
+
+				// cosine *= cosine; Commented because is equivalent to remove the root square in aux
+
+				size_t idxf = DIRECT_MULTIDIM_ELEM(freqidx, n);
+
+				dAi(num, idxf) += DIRECT_MULTIDIM_ELEM(real_z1z2, n);//  * cosine;
+				dAi(den1,idxf) += DIRECT_MULTIDIM_ELEM(absz1_vec, n);//  * cosine;
+				dAi(den2,idxf) += DIRECT_MULTIDIM_ELEM(absz2_vec, n);//  * cosine;
+				cc++;
+			}
+			
+		}
+		// std::cout << "cc = " << cc << std::endl;
+
+		// std::cout << "---------------------------" << std::endl;
+		
+		MultidimArray< double > freq;
+		MultidimArray< double > frc;
+		freq.initZeros(dim);
+		fsc.resizeNoCopy(freq);
+		fsc.initConstant(1.0);
+
+
+		//The fsc is stored in a metadata and saved
+		#ifdef SAVE_DIR_FSC
+		
+		
+		size_t id;
+		FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
+		{
+
+			dAi(fsc,i) = (dAi(num,i)+1e-38)/(sqrt(dAi(den1,i)*dAi(den2,i))+1e-38);
+			dAi(freq,i) = (float) i / (xvoldim * sampling);
+		}
+		
+		
+		#endif
+
+		//TODO: join with previous loop
+
+		size_t ind_res;
+		FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
+		{
+
+
+			if ( (dAi(fsc,i)<=thrs))
+			{
+							id=mdRes.addObject();
+			mdRes.setValue(MDL_IDX, (size_t) i, id); // Fourier Index
+			mdRes.setValue(MDL_COUNT, aa, id);       // Angle
+			mdRes.setValue(MDL_RESOLUTION_FREQ, dAi(freq, i),id);
+			mdRes.setValue(MDL_RESOLUTION_FRC, dAi(fsc, i),id);
+			mdRes.setValue(MDL_RESOLUTION_FREQREAL, 1./dAi(freq, i), id);
+				break;
+			}
+		}
+		
+		mdRes.write(fnmd);
+	}
+}
