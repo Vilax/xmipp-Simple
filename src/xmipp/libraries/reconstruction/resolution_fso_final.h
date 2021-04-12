@@ -31,15 +31,14 @@
 #include <core/xmipp_program.h>
 #include <core/xmipp_fftw.h>
 #include <core/metadata_extension.h>
-#include <data/monogenic_signal.h>
 #include <random>
 
 
-class ProgFSO : public XmippProgram
+class ProgFSOFinal : public XmippProgram
 {
 public:
         // Filenames
-        FileName fnhalf1, fnhalf2, fnmask, fn_3dfsc, fn_ani, fnOut, fnPDB;
+        FileName fnhalf1, fnhalf2, fnmask, fn_3dfsc, fn_ani, fnOut;
 
         // Double Params
         double sampling, ang_con, thrs;
@@ -67,13 +66,11 @@ public:
 		MultidimArray< double > freqMap;
 
 		//Half maps
-		MultidimArray< std::complex< double > > FT1, FT2, FT_aux;
-		MultidimArray<float> real_z1z2, absz1_vec, absz2_vec, noiseMap;
-		MultidimArray<double> noiseStd, noiseMean, noiseAmp2, signalMean, reSignalMean, reNoiseMean, imSignalMean, 
-		                      imNoiseMean, signalReStd, signalImStd, noiseReStd, noiseImStd, Nsh;
+		MultidimArray< std::complex< double > > FT1, FT2;
+		MultidimArray<float> real_z1z2, absz1_vec, absz2_vec;
 
 		//Access indices
-		MultidimArray<long> freqElems, cumpos, freqidx, arr2indx, shellElems;;
+		MultidimArray<long> freqElems, cumpos, freqidx, arr2indx;
 
 
 public:
@@ -91,20 +88,6 @@ public:
         void defineFrequencies(const MultidimArray< std::complex<double> > &myfftV,
     		                                    const MultidimArray<double> &inputVol);
 
-        // Estimates the directional FSC between two half maps FT1 and FT2 (in Fourier Space)
-        // requires the sampling rate, and the frequency vectors, 
-        void fscDir(MultidimArray< std::complex< double > > & FT1,
-            	 MultidimArray< std::complex< double > > & FT2,
-                 double sampling_rate,
-				 Matrix1D<double> &freq_fourier_x,
-				 Matrix1D<double> &freq_fourier_y,
-				 Matrix1D<double> &freq_fourier_z,
-				 MultidimArray< double >& freqMap,
-                 MultidimArray< double >& freq,
-                 MultidimArray< double >& frc,
-    			 double maxFreq, int m1sizeX, int m1sizeY, int m1sizeZ,
-				 double rot, double tilt, double ang_con, double &dres, double &thrs);
-
         // Estimates the global FSC between two half maps FT1 and FT2 (in Fourier Space)
         void fscGlobal(double sampling_rate,
                  MultidimArray< double >& freq,
@@ -119,43 +102,10 @@ public:
 			 Matrix1D<double> &freq_fourier_y,
 			 Matrix1D<double> &freq_fourier_z);
 
-        void crossValues(Matrix2D<double> &indexesFourier, double &rot, double &tilt, double &angCon,
-			 MultidimArray<std::complex<double>> &f1, MultidimArray<std::complex<double>> &f2,
-			 std::complex<double> &f1_mean, std::complex<double> &f2_mean);
-
-        void weights(double freq, Matrix2D<double> &indexesFourier, Matrix2D<int> &indexesFourier2, double &rot, double &tilt, double &angCon,
-			 MultidimArray<std::complex<double>> &f1, MultidimArray<std::complex<double>> &f2,
-			 MultidimArray<std::complex<double>> &FT1, MultidimArray<std::complex<double>> &FT2,
-			 Matrix1D<double> &freq_fourier_x,
-			 Matrix1D<double> &freq_fourier_y,
-			 Matrix1D<double> &freq_fourier_z,
-			 double &cross);
-
-
-        void fscShell(MultidimArray< std::complex< double > > & FT1,
-    		 MultidimArray< std::complex< double > > & FT2,
-			 Matrix1D<double> &freq_fourier_x,
-			 Matrix1D<double> &freq_fourier_y,
-			 Matrix1D<double> &freq_fourier_z,
-			 MultidimArray< double >& freqMap,
-			 int m1sizeX, Matrix2D<double> &indexesFourier, Matrix2D<int> &indexesFourier2, double &cutoff,
-			 MultidimArray<std::complex<double>> &f1, MultidimArray<std::complex<double>> &f2);
-        
+       
         // Defines a Matrix2D with coordinates Rot and tilt achieving a uniform coverage of the
         // projection sphere. Bool alot = True, implies a dense converage
         void generateDirections(Matrix2D<float> &angles, bool alot);
-
-        void interpolationCoarse(MultidimArray< double > fsc,
-    		const Matrix2D<double> &angles,
-			Matrix1D<double> &freq_fourier_x,
-			Matrix1D<double> &freq_fourier_y,
-			Matrix1D<double> &freq_fourier_z,
-    		MultidimArray<double> &threeD_FSC,
-			MultidimArray<double> &counterMap,
-			MultidimArray< double >& freqMap,
-			MultidimArray< double >& freq,
-			double maxFreq, int m1sizeX, int m1sizeY, int m1sizeZ,
-			double rot, double tilt, double ang_con);
 
         void anistropyParameter(const MultidimArray<double> FSC,
     		MultidimArray<double> &directionAnisotropy, size_t dirnumber,
@@ -192,81 +142,15 @@ public:
 
         void run();
 
-		void run_fast();
-
-
-
 		void arrangeFSC_and_fscGlobal(double sampling_rate, 
 						double &thrs, double &resInterp, MultidimArray<double> &freq);
 
+        // Estimates the directional FSC between two half maps FT1 and FT2 (in Fourier Space)
+        // requires the sampling rate, and the frequency vectors, 
 		void fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 				         MetaData &mdRes, MultidimArray<double> &threeD_FSC, 
 						 MultidimArray<double> &normalizationMap,
 						 double &fscFreq, double &thrs, double &resol, size_t dirnumber);
-
-		void fscDir_fast_cv(MultidimArray<double> &fsc, double rot, double tilt,
-				         MetaData &mdRes, MultidimArray<double> &threeD_FSC, 
-						 MultidimArray<double> &normalizationMap,
-						 double &fscFreq, double &thrs, double &resol, size_t dirnumber);
-
-		void fscDir_fast_all_angles(MultidimArray<double> &fsc, double rot, double tilt,
-				         MetaData &mdRes, MultidimArray<double> &threeD_FSC, 
-						 MultidimArray<double> &normalizationMap,
-						 double &fscFreq, double &thrs, double &resol, size_t dirnumber);
-		
-		void all_dir_fsc_at_once(MultidimArray<double> &aniParam);
-
-		void limitFSO();
-
 };
 
 #endif
-
-
-/*		void run_old();
-
-        void estimateSSNR(MultidimArray<double> &half1, MultidimArray<double> &half2,
-		                int m1sizeX, int m1sizeY, int m1sizeZ);
-
-        void directionalSSNR(MultidimArray< std::complex< double > > & FT1,
-					 MultidimArray< std::complex< double > > & FT2, double sampling_rate,
-					 Matrix1D<double> &freq_fourier_x,
-					 Matrix1D<double> &freq_fourier_y,
-					 Matrix1D<double> &freq_fourier_z,
-					 MultidimArray< double >& freqMap, MultidimArray< double >& sig,
-					 MultidimArray< double >& noi,
-					 double maxFreq, int m1sizeX, int m1sizeY, int m1sizeZ,
-					 double rot, double tilt, double ang_con, size_t dire);
-
-        void getErrorCurves(int &m1sizeX, int &m1sizeY, int &m1sizeZ,
-	                        Matrix1D<double> &freq_fourier_x,
-	                        Matrix1D<double> &freq_fourier_y,
-	                        Matrix1D<double> &freq_fourier_z, 
-                            MultidimArray<double> &freqMap, size_t Nrealization, double thrs);
-		
-		void noiseStatisticsInMask(MultidimArray<double> &map, MultidimArray<double> &mask,
- 									double &mean, double &stdev);
-
-		void createNoisyMap(MultidimArray<double> &map, double mean, double stddev);
-
-		void createNoisyFringePattern(MultidimArray<double> &map, MultidimArray<double> &noise, 
-									  MultidimArray<double> &mask,
-										double sqrtpowernoise, double wavelength);
-
-		void findBestConeAngle(Matrix2D<int> &fscShell, double resolutionfsc);
-
-		// void shellValue(Matrix2D<double> &indexesFourier, double &rot, double &tilt,
-		// 	MultidimArray<std::complex<double>> &f1, MultidimArray<std::complex<double>> &f2,
-		// 	std::complex<double> &f_coeff_1, std::complex<double>  &f_coeff_2);
-
-		void shellValue(double freq, double &rot, double &tilt,
-			MultidimArray<std::complex<double>> &FT1, MultidimArray<std::complex<double>> &FT2,
-			Matrix1D<double> &freq_fourier_x,
-			Matrix1D<double> &freq_fourier_y,
-			Matrix1D<double> &freq_fourier_z,
-			std::complex<double> &f_coeff_1, std::complex<double>  &f_coeff_2);
-
-		void findIndexinVector(double freq, double x_dir, size_t &idx,
-								Matrix1D<double> &freq_fourier);
-
-								*/

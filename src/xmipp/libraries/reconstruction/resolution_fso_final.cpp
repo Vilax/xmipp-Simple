@@ -25,12 +25,12 @@
  *  e-mail address 'xmipp@cnb.csic.es'
  ***************************************************************************/
 
-#include "resolution_fso.h"
+#include "resolution_fso_final.h"
 #include <chrono> 
 
 #define SAVE_DIR_FSC
 
-void ProgFSO::defineParams()
+void ProgFSOFinal::defineParams()
 {
 	addUsageLine("Calculate Fourier Shell Occupancy - FSO curve - via directional FSC measurements.");
 	addUsageLine("Next results are obtained:");
@@ -73,7 +73,6 @@ void ProgFSO::defineParams()
 
 	addParamsLine("   [-o <output_folder=\"\">]          : Folder where the results will be stored.");
 
-	addParamsLine("   [--atmodel <input_file>]           : (Optical) Atomic model (pdb file) it is used to simulate the best FSO limit curve of the protein.");
 	addParamsLine("   [--sampling <Ts=1>]                : (Optical) Pixel size (Angstrom). If it is not provided by default will be 1 A/px.");
 	addParamsLine("   [--mask <input_file=\"\">]         : (Optional) Smooth mask to remove noise. It it is not provided, the computation will be carried out without mask.");
 
@@ -93,13 +92,12 @@ void ProgFSO::defineParams()
 	addExampleLine("xmipp_resolution_fso --half1 half1.mrc  --half2 half2.mrc --sampling_rate 2");
 }
 
-void ProgFSO::readParams()
+void ProgFSOFinal::readParams()
 {
 	fnhalf1 = getParam("--half1");
 	fnhalf2 = getParam("--half2");
 	fnOut = getParam("-o");
 
-	fnPDB = getParam("--atmodel");
 	sampling = getDoubleParam("--sampling");
 	fnmask = getParam("--mask");
 	ang_con = getDoubleParam("--anglecone");
@@ -116,7 +114,7 @@ void ProgFSO::readParams()
 // The frequencies along thre three axis are defined as freq_fourier_x, freq_fourier_y, freq_fourier_z.
 // Also a sphere is created to localize the frequencies in Fourier space, by means of the chimera threshold.
 // The output variables sphere, freq_fourier_x, freq_fourier_y, freq_fourier_z, freqElems, freqMap.
-void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myfftV,
+void ProgFSOFinal::defineFrequencies(const MultidimArray< std::complex<double> > &myfftV,
 		const MultidimArray<double> &inputVol)
 {
 	// u is the frequency
@@ -229,7 +227,7 @@ void ProgFSO::defineFrequencies(const MultidimArray< std::complex<double> > &myf
 // 3) To speed up the algorithm, only are considered those voxels with frequency lesser than Nyquist, 0.5. The vector idx_count
 // stores all frequencies lesser than Nyquist. This vector determines the frequency of each component of 
 // real_z1z2, absz1_vec, absz2_vec.
-void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
+void ProgFSOFinal::arrangeFSC_and_fscGlobal(double sampling_rate,
 				double &thrs, double &fscResolution, MultidimArray<double> &freq)
 	{
 		// Determining the cumulative number of frequencies per shell number, cumpos
@@ -252,31 +250,12 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 		real_z1z2.initZeros(Ncomps);
 		absz1_vec = real_z1z2;
 		absz2_vec = real_z1z2;
-		noiseMap.resizeNoCopy(FT1);
-		noiseMap.initZeros();
 		
 		// num and den are de numerator and denominator of the fsc
 		MultidimArray<long> pos;
 		MultidimArray<double> num, den1, den2, noiseAmp;
 		num.initZeros(freqElems);
 		pos.resizeNoCopy(num);
-		noiseStd = num;
-		noiseAmp = noiseStd;
-		noiseAmp2 = noiseStd;
-		noiseMean = noiseStd;
-		signalMean = noiseStd;
-		
-		Nsh = noiseStd;
-		reSignalMean = num;
-		reNoiseMean = num;
-		imSignalMean = num;
-		imNoiseMean = num;
-		signalReStd = num;
-		signalImStd = num;
-		noiseReStd = num;
-		noiseImStd = num;
-		shellElems.resizeNoCopy(num);
-		shellElems.initZeros();
 
 		freqidx.resizeNoCopy(real_z1z2);
 
@@ -346,66 +325,6 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 					std::complex<double> &z1 = dAkij(FT1, k, i, j);
 					std::complex<double> &z2 = dAkij(FT2, k, i, j);
 
-					std::complex<double> signal = (z1+z2)*0.5;
-					//TODO: remove the 1/sqrt(2)
-					std::complex<double> noise = (z1-z2)*0.5;
-
-					double rsig = real(signal);
-					double isig = imag(signal);
-					double rnoi = real(noise);
-					double inoi = imag(noise);
-
-
-					dAi(reSignalMean,idx) += rsig;
-					dAi(imSignalMean,idx) += isig;
-
-					dAi(reNoiseMean,idx)  += rnoi;
-					dAi(imNoiseMean,idx)  += inoi;
-
-					dAi(signalReStd,idx)  += rsig*rsig;
-					dAi(signalImStd,idx)  += isig*isig;
-					dAi(noiseReStd,idx)   += rnoi*rnoi;
-					dAi(noiseImStd,idx)   += inoi*inoi;
-
-					double renoise = real(noise);
-					double imnoise = imag(noise);
-
-					double aa = DIRECT_MULTIDIM_ELEM(fx, idx_count)/sqrt(DIRECT_MULTIDIM_ELEM(fx, idx_count)*DIRECT_MULTIDIM_ELEM(fx, idx_count)+ DIRECT_MULTIDIM_ELEM(fy, idx_count)*DIRECT_MULTIDIM_ELEM(fy, idx_count));
-
-
-					// if (aa>=cos(20.0*PI/180.0) && (aa<=cos(17.0*PI/180.0))) 
-					// {
-					// 	double alpha = acos(aa);
-					// 	dAkij(FT_aux, k, i, j) *= 0.5* ( 1 + cos((alpha - 17)*PI/(3*PI/180.0) ) );
-					// }
-					// else 
-					// if (aa>cos(17.0*PI/180.0))
-					// {
-					// 	dAkij(FT_aux, k, i, j) = 0;
-					// }
-					aa = DIRECT_MULTIDIM_ELEM(fx, idx_count);
-					if (aa>=cos(10.0*PI/180.0) && (aa<=cos(7.0*PI/180.0))) 
-					{
-						double alpha = acos(aa);
-						dAkij(FT_aux, k, i, j) *= 0.5* ( 1 + cos((alpha - 7)*PI/(3*PI/180.0) ) );
-					}
-					if (aa>cos(7.0*PI/180.0))
-					{
-						dAkij(FT_aux, k, i, j) = 0;
-					}
-					
-					// if (idx == 68)
-		            //     std::cout << (z1) << "  " << (z2) << std::endl;
-
-					dAi(signalMean,idx) += abs(signal)*abs(signal);
-					dAi(Nsh,idx) = dAi(Nsh,idx) + 1.0;
-					dAi(noiseMean,idx) += abs(noise)*abs(noise);
-					//dAi(noiseAmp2,idx) += noise*noise;
-
-					dAkij(noiseMap, k,i,j) = abs(noise)*abs(noise);
-
-					dAi(shellElems,idx) += 1;
-
 					double absz1 = abs(z1);
 					double absz2 = abs(z2);
 
@@ -421,21 +340,6 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 				}
 			}
 		}
-		
-		FourierTransformer tnsform;
-		MultidimArray<double> aaa;
-		aaa.initZeros(512, 512, 512);
-		std::cout << "llego" << std::endl;
-
-		tnsform.inverseFourierTransform(FT_aux, aaa);
-		CenterFFT(aaa, true);
-
-		std::cout << "llego" << std::endl;
-		Image<double> saveImg;
-		saveImg() = aaa;
-		saveImg.write("cone.mrc");
-
-
 
 
 		// The global FSC is stored as a metadata
@@ -449,28 +353,6 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 			dAi(frc,i) = dAi(num,i)/sqrt(dAi(den1,i)*dAi(den2,i));
 			dAi(freq,i) = (float) i / (xvoldim * sampling_rate);
 
-			double numelems = dAi(shellElems,i);
-
-			dAi(reSignalMean,i) /= numelems;
-			dAi(imSignalMean,i) /= numelems;
-
-			dAi(reNoiseMean,i) /= numelems;
-			dAi(imNoiseMean,i) /= numelems;
-
-			dAi(signalReStd,i) = sqrt(dAi(signalReStd,i)/numelems - dAi(reSignalMean,i)*dAi(reSignalMean,i));
-			dAi(signalImStd,i) = sqrt(dAi(signalImStd,i)/numelems - dAi(imSignalMean,i)*dAi(imSignalMean,i));
-			
-			dAi(noiseReStd,i) = sqrt(dAi(noiseReStd,i)/numelems - dAi(reNoiseMean,i)*dAi(reNoiseMean,i));
-			dAi(noiseImStd,i) = sqrt(dAi(noiseImStd,i)/numelems - dAi(imNoiseMean,i)*dAi(imNoiseMean,i));
-			
-			//dAi(signalMean,i) = dAi(signalMean,i)/dAi(shellElems,i);
-
-			//dAi(signalMean,i) = dAi(signalMean,i)/dAi(shellElems,i);
-			//double mn = dAi(noiseMean,i)/dAi(shellElems,i);
-
-			//dAi(noiseAmp2,i) = dAi(noiseAmp2,i)/dAi(shellElems,i);
-			//dAi(noiseStd,i) = dAi(noiseAmp2,i) - mn*mn;
-
 			if (i>0)
 			{
 				id=mdRes.addObject();
@@ -478,9 +360,6 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 				mdRes.setValue(MDL_RESOLUTION_FREQ,dAi(freq, i),id);
 				mdRes.setValue(MDL_RESOLUTION_FRC,dAi(frc, i),id);
 				mdRes.setValue(MDL_RESOLUTION_FREQREAL, 1./dAi(freq, i), id);
-				mdRes.setValue(MDL_SCALE, log(dAi(signalMean,i)/dAi(Nsh,i)), id);
-				mdRes.setValue(MDL_VOLUME_SCORE1, log(dAi(noiseMean,i)/dAi(Nsh,i)), id);
-				//std::cout << "Noise mean = " << mn << "   NoiseStd = " << std::endl;
 			}
 		}
 		mdRes.write(fnOut+"/GlobalFSC.xmd");
@@ -530,7 +409,7 @@ void ProgFSO::arrangeFSC_and_fscGlobal(double sampling_rate,
 // will be used to estimate the FSO.
 // In addition, the 3dfsc and a normalizationmap (needed to estimate the 3dfsc) are created. For each direction
 // these vectors are updated
-void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
+void ProgFSOFinal::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 				MetaData &mdRes, MultidimArray<double> &threeD_FSC, MultidimArray<double> &normalizationMap,
 				double &fscFreq, double &thrs, double &resol, size_t dirnumber)
 {
@@ -660,7 +539,7 @@ void ProgFSO::fscDir_fast(MultidimArray<double> &fsc, double rot, double tilt,
 // on the sphere 
 // The flag true set the number of picked points (alot = true means 321, alot=false means 80)
 // Angles are in radians
-void ProgFSO::generateDirections(Matrix2D<float> &angles, bool alot)
+void ProgFSOFinal::generateDirections(Matrix2D<float> &angles, bool alot)
 {
 	if (alot == true)
 	{
@@ -1080,7 +959,7 @@ void ProgFSO::generateDirections(Matrix2D<float> &angles, bool alot)
 // ANISOTROPYPARAMETER: Given a directional FSC it is determined how many 
 // frequencyes/points of the FSC has a greater fsc than the fsc threshold, thrs, 
 // This is carried out in aniParam, .
-void ProgFSO::anistropyParameter(const MultidimArray<double> FSC,
+void ProgFSOFinal::anistropyParameter(const MultidimArray<double> FSC,
 		MultidimArray<double> &directionAnisotropy, size_t dirnumber,
 		MultidimArray<double> &	aniParam, double thrs)
 {
@@ -1101,7 +980,7 @@ void ProgFSO::anistropyParameter(const MultidimArray<double> FSC,
 // The half maps will be read and stored in the multidimarray half1, and half2.
 // Also de mask (if provided) is read and stored in mask (defined in .h)
 // the flag test = true, launch a unitary test with phantom data generated in the code
-void ProgFSO::prepareData(MultidimArray<double> &half1, MultidimArray<double> &half2, bool test)
+void ProgFSOFinal::prepareData(MultidimArray<double> &half1, MultidimArray<double> &half2, bool test)
 {
 	Image<double> mask;
 	MultidimArray<double> &pmask = mask();
@@ -1162,7 +1041,7 @@ void ProgFSO::prepareData(MultidimArray<double> &half1, MultidimArray<double> &h
 
 // SAVEANISOTROPYTOMETADATA - The FSO is stored in metadata file. The FSO comes from
 // anisotropy and the frequencies from freq.
-void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
+void ProgFSOFinal::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 		const MultidimArray<double> &freq,
 		const MultidimArray<double> &anisotropy)
 {
@@ -1185,7 +1064,7 @@ void ProgFSO::saveAnisotropyToMetadata(MetaData &mdAnisotropy,
 // DIRECTIONALFILTER: The half maps are summed to get the full map, and are filtered
 // by an anisotropic filter with cutoff the isosurface of the fsc at the given threshold
 // introduced by the user. 
-void ProgFSO::directionalFilter(MultidimArray<std::complex<double>> &FThalf1, 
+void ProgFSOFinal::directionalFilter(MultidimArray<std::complex<double>> &FThalf1, 
 			MultidimArray<double> &threeDfsc, 
 			MultidimArray<double> &filteredMap, int m1sizeX, int m1sizeY, int m1sizeZ)
     {
@@ -1216,7 +1095,7 @@ void ProgFSO::directionalFilter(MultidimArray<std::complex<double>> &FThalf1,
 // projection sphere. Thus the metadata contains the resolution of each direction.
 // To do that, a matrix with rows the rot angle and columns the tilt angle is created.
 // the rot angle goes from from 0-360 and tilt from 0-90 both in steps of 1 degree.
-void ProgFSO::resolutionDistribution(MultidimArray<double> &resDirFSC, FileName &fn)
+void ProgFSOFinal::resolutionDistribution(MultidimArray<double> &resDirFSC, FileName &fn)
     {
     	Matrix2D<int> anglesResolution;
     	size_t Nrot = 360;
@@ -1282,7 +1161,7 @@ void ProgFSO::resolutionDistribution(MultidimArray<double> &resDirFSC, FileName 
 
 // GETCOMPLETEFOURIER: Because of the hermitician symmetry of the Fourier space, xmipp works with the half
 // of the space. This function recover the whole Fourier space (both halfs).
-void ProgFSO::getCompleteFourier(MultidimArray<double> &V, MultidimArray<double> &newV,
+void ProgFSOFinal::getCompleteFourier(MultidimArray<double> &V, MultidimArray<double> &newV,
     		int m1sizeX, int m1sizeY, int m1sizeZ)
         {
     	newV.resizeNoCopy(m1sizeX, m1sizeY, m1sizeZ);
@@ -1317,7 +1196,7 @@ void ProgFSO::getCompleteFourier(MultidimArray<double> &V, MultidimArray<double>
 
 // CREATEFULLFOURIER: The inpur is a Fourier Transform, the function will compute the full Fourier
 // and will save it in disc, with the name of fnMap m1sizeX, m1sizeY, m1sizeZ, define the size.
-void ProgFSO::createFullFourier(MultidimArray<double> &fourierHalf, FileName &fnMap,
+void ProgFSOFinal::createFullFourier(MultidimArray<double> &fourierHalf, FileName &fnMap,
     		int m1sizeX, int m1sizeY, int m1sizeZ)
     {
     	MultidimArray<double> fullMap;
@@ -1329,7 +1208,7 @@ void ProgFSO::createFullFourier(MultidimArray<double> &fourierHalf, FileName &fn
     }
 
 
-void ProgFSO::run()
+void ProgFSOFinal::run()
 	{
 		std::cout << "Starting ... " << std::endl;
 		std::cout << " " << std::endl;
@@ -1349,8 +1228,6 @@ void ProgFSO::run()
         transformer1.FourierTransform(half1, FT1, false);
      	transformer2.FourierTransform(half2, FT2, false);
 
-		FT_aux = FT1;
-		
         auto clockstartsfreq = std::chrono::high_resolution_clock::now();
 		// Defining frequencies freq_fourier_x,y,z and freqMap
 		// The number of frequencies in each shell freqElem is determined
@@ -1364,11 +1241,11 @@ void ProgFSO::run()
 		std::cout << "time freq = " << std::chrono::duration_cast<std::chrono::milliseconds>(clockendsfreq-clockstartsfreq).count()  << std::endl;
 		// Storing the shell of both maps as vectors global
 		// The global FSC is also computed
-		MultidimArray<double> fscglobal, freqglobal, freq;
+		MultidimArray<double> freq;
 		double resol, resInterp;
 		auto clockstartsfsc = std::chrono::high_resolution_clock::now();
 		arrangeFSC_and_fscGlobal(sampling, thrs, resInterp, freq);
-		// std::cout << "Resolution FSC at 0.143 = " << resInterp << " " << resInterp << std::endl;
+
 		std::cout << " " << std::endl;
 		auto clockendsfsc = std::chrono::high_resolution_clock::now(); 
 
@@ -1380,12 +1257,9 @@ void ProgFSO::run()
     	generateDirections(angles, true);
     	ang_con = ang_con*PI/180;
 
-    	
 		// Preparing the metadata for storing the FSO
 		MultidimArray<double> directionAnisotropy(angles.mdimx), resDirFSC(angles.mdimx), aniParam;
     	aniParam.initZeros(xvoldim/2+1);
-    	MetaData mdAnisotropy;
-
 
 		// Computing directional FSC and 3DFSC
 		MultidimArray<double> fsc, threeD_FSC, normalizationMap;
@@ -1394,18 +1268,11 @@ void ProgFSO::run()
 		normalizationMap.resizeNoCopy(real_z1z2);
 		normalizationMap.initZeros();
 		
-		int inMissingZone = 0;
-		
-		//thrs = 0.143;
 		auto clockstartsdir = std::chrono::high_resolution_clock::now();
     	for (size_t k = 0; k<angles.mdimx; k++)
 		{
-			// size_t k = 6;
 			float rot  = MAT_ELEM(angles, 0, k);
 			float tilt = MAT_ELEM(angles, 1, k);
-
-			if (rot<20*PI/180 || (rot>340*PI/180) || ((rot<200*PI/180) && rot>160*PI/180) )
-				std::cout << ++inMissingZone << std::endl;
 
 			// Estimating the direction FSC along the diretion given by rot and tilt
 			MetaData mdDirFSC;
@@ -1509,167 +1376,4 @@ void ProgFSO::run()
 		resolutionDistribution(resDirFSC, fn);
 		
 		std::cout << "-------------Finished-------------" << std::endl;
-		//limitFSO();
-		std::cout << "-------------Finished-------------" << std::endl;
-}
-
-
-void ProgFSO::limitFSO()
-{
-	std::cout << "Starting the FSO limit" << std::endl;
-
-	Image<double> imgpdb;
-	imgpdb.read(fnPDB);
-    MultidimArray<double> ptrpdbVol = imgpdb();
-
-	std::cout << "llego00" << std::endl;
-    MultidimArray<std::complex<double>> FT1;
-    ptrpdbVol.setXmippOrigin();
-
-	FourierTransformer transformerpdb(FFTW_BACKWARD);
-	transformerpdb.setThreadsNumber(Nthreads);
-        //FT1.clear();
-	transformerpdb.FourierTransform(ptrpdbVol, FT1, false);
-        std::cout << "llego1" << std::endl;
-	int ZdimFT1=(int)ZSIZE(FT1);
-	int YdimFT1=(int)YSIZE(FT1);
-	int XdimFT1=(int)XSIZE(FT1);
-
-	MultidimArray<double> signalpdbmean, signalpdb2, freq, resignalpdb, imsignalpdb;
-	
-	shellElems.initZeros();
-	resignalpdb.resizeNoCopy(shellElems);
-	resignalpdb.initZeros();
-
-	imsignalpdb = resignalpdb;
-	std::cout << "llego0" << std::endl;
-
-	long n = 0;
-	for (int k=0; k<ZdimFT1; k++)
-	{
-		for (int i=0; i<YdimFT1; i++)
-		{
-			for (int j=0; j<XdimFT1; j++)
-			{
-    			double iun = DIRECT_MULTIDIM_ELEM(freqMap,n);
-				double f = 1/iun;
-				++n;
-
-				// Only reachable frequencies
-				if (f>0.5)
-					continue;
-				
-				// Index of each frequency
-				int idx = (int) round(f * xvoldim);
-				
-				// Fourier coefficients of both halves
-				std::complex<double> &z1 = dAkij(FT1, k, i, j);
-
-				//double signalpdb = abs(z1);
-
-				dAi(resignalpdb, idx) += real(z1);
-				dAi(imsignalpdb, idx) += imag(z1);
-
-				dAi(shellElems,idx) += 1;
-			}
-		}
-	}
-
-    std::cout << "llego0" << std::endl;
-	freq.initZeros(signalpdb2);
-	std::cout << "llego0" << std::endl;
-	// The scale factor for the atomic model converted into density map is computed
-	FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
-	{
-		double mrs = dAi(resignalpdb,i)/dAi(shellElems,i);
-		double mis = dAi(imsignalpdb,i)/dAi(shellElems,i);
-		
-
-		//The scale factor for each frequency is overwritten in the signalMean
-		dAi(reSignalMean,i) = dAi(reSignalMean,i)/mrs;
-		dAi(imSignalMean,i) = dAi(imSignalMean,i)/mis;
-	}
-
-    std::cout << "llego" << std::endl;
-	// Now the two half maps are created
-	MultidimArray<double> num, den1, den2;
-    num.resizeNoCopy(freqElems);
-	num.initZeros();
-	den1 = num;
-	den2 = num;
-
-	std::default_random_engine generator;
-    std::complex<double> J(0,1);
-	n = 0;
-	for (int k=0; k<ZdimFT1; k++)
-	{
-		for (int i=0; i<YdimFT1; i++)
-		{
-			for (int j=0; j<XdimFT1; j++)
-			{
-    			double iun = DIRECT_MULTIDIM_ELEM(freqMap,n);
-				double f = 1/iun;
-				++n;
-
-				// Only reachable frequencies
-				if (f>0.5)
-					continue;
-
-				// Index of each frequency
-				int idx = (int) round(f * xvoldim);
-
-				std::normal_distribution<double> distribution_real(dAi(reNoiseMean,idx), dAi(noiseReStd,idx));
-				std::normal_distribution<double> distribution_imag(dAi(imNoiseMean,idx), dAi(noiseImStd,idx));
-
-				// Fourier coefficients of both halves
-				std::complex<double> &z = dAkij(FT1, k, i, j) ;
-
-				// std::complex<double> z1 = z*dAi(signalMean, idx) + distribution(generator);
-				// std::complex<double> z2 = z*dAi(signalMean, idx) + distribution(generator);
-				double reAux = distribution_real(generator);
-				double ImAux = distribution_imag(generator);
-				
-				double absnoise2 = DIRECT_MULTIDIM_ELEM(noiseMap,n);
-
-				std::complex<double> z1 = (real(z)*dAi(reSignalMean, idx)+J*imag(z)*dAi(imSignalMean, idx)) + distribution_real(generator) + J*distribution_imag(generator);
-				std::complex<double> z2 = (real(z)*dAi(reSignalMean, idx)+J*imag(z)*dAi(imSignalMean, idx)) + distribution_real(generator) + J*distribution_imag(generator);
-
-				double absz1 = abs(z1);
-				double absz2 = abs(z2);
-
-				dAi(num,idx) += real(z1*conj(z2));
-				dAi(den1,idx) += absz1*absz1;
-				dAi(den2,idx) += absz2*absz2;
-
-			}
-		}
-	}
-
-        std::cout << "llego" << std::endl;
-	// The global FSC is stored as a metadata
-	size_t id;
-	MetaData mdRes;
-	MultidimArray< double > frc;
-	freq.initZeros(freqElems);
-	frc.initZeros(freqElems);
-	FOR_ALL_ELEMENTS_IN_ARRAY1D(freq)
-	{
-		dAi(frc,i) = dAi(num,i)/sqrt(dAi(den1,i)*dAi(den2,i));
-		dAi(freq,i) = (float) i / (xvoldim * sampling);
-
-		if (i>0)
-		{
-			id=mdRes.addObject();
-			mdRes.setValue(MDL_RESOLUTION_FREQ,dAi(freq, i),id);
-			mdRes.setValue(MDL_RESOLUTION_FRC,dAi(frc, i),id);
-			mdRes.setValue(MDL_RESOLUTION_FREQREAL, 1./dAi(freq, i), id);
-		}
-	}
-        std::cout << "llego" << std::endl;
-	mdRes.write(fnOut+"/GlobalFSC_synthetic.xmd");
-
-
-
-	
-
 }
